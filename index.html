@@ -69,7 +69,8 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 .lbl .hd img.scritta{max-width:100%;display:block}
 .lbl .azsub{font-family:Georgia,"Times New Roman",serif;letter-spacing:.18em;font-size:8pt;margin-top:.6mm;line-height:1}
 .lbl .aznome{font-family:Georgia,serif;font-size:13pt;font-style:italic}
-.lbl .addr{text-align:center;font-weight:700;margin-top:.6mm;white-space:nowrap}
+.lbl .rs{text-align:center;font-weight:700;margin-top:.6mm;white-space:nowrap}
+.lbl .addr{text-align:center;white-space:nowrap}
 .lbl .cont{text-align:center}
 .lbl .pn{font-weight:700;text-align:center;margin-top:1.1mm;font-size:11pt;line-height:1.05;text-transform:uppercase}
 .lbl .ps{text-align:center;font-size:8pt;margin-top:.2mm}
@@ -184,7 +185,7 @@ function defaultState(){
     version:1,
     settings:{
       updatedAt:t,
-      azienda:{nome:'La Magiostra', sottotitolo:'CUCINA', indirizzo:'Via Grado 1 – 26100 Cremona', contatti:'Tel. 0372 21415 – aquilinochiara@libero.it'},
+      azienda:{nome:'La Magiostra', sottotitolo:'CUCINA', ragioneSociale:'La Magiostra di Aquilino e C. snc', indirizzo:'Via Grado 1 – 26100 Cremona (CR)', contatti:'Tel. 0372 21415 – aquilinochiara@libero.it'},
       logo:'sole+scritta', logoCustom:'',
       etichetta:{w:60,h:70,pad:2.5,minPt:7,maxPt:8.5,allergeniMaiuscolo:false,etichettaProdotto:'Prodotto il:',mostraContatti:true},
       foglio:{preset:'A4_60x70',modo:'a4',pageW:210,pageH:297,cols:3,rows:4,mTop:8.5,mLeft:15,gapX:0,gapY:0,taglio:true},
@@ -216,7 +217,14 @@ DEV = Object.assign({offX:0,offY:0,coda:[],start:0},DEV);
 let TAB='stampa', SEL=null, EDIT=null, Q='';
 let fileHandle=null, lastSync=null, syncTimer=null;
 
-function load(){ try{ const s=JSON.parse(localStorage.getItem('mag_data')); if(s&&s.settings) return s; }catch(e){} return defaultState(); }
+function normalize(s){
+  // aggiorna dati salvati con versioni precedenti senza cambiare updatedAt (non sovrascrive modifiche di altre postazioni)
+  const a=s.settings.azienda;
+  if(a.ragioneSociale===undefined) a.ragioneSociale='La Magiostra di Aquilino e C. snc';
+  if(a.indirizzo==='Via Grado 1 – 26100 Cremona') a.indirizzo='Via Grado 1 – 26100 Cremona (CR)';
+  return s;
+}
+function load(){ try{ const s=JSON.parse(localStorage.getItem('mag_data')); if(s&&s.settings) return normalize(s); }catch(e){} return defaultState(); }
 function saveLocal(){ localStorage.setItem('mag_data',JSON.stringify(S)); }
 function saveDev(){ localStorage.setItem('mag_dev',JSON.stringify(DEV)); }
 function touchSettings(){ S.settings.updatedAt=now(); commit(); }
@@ -266,6 +274,7 @@ function labelHTML(job, opts={}){
   const minPt=e.minPt;
   return `<div class="lbl ${opts.cut?'cut':''}" style="width:${W}mm;height:${H}mm"><div class="in" style="padding:${P}mm">
     <div class="hd">${logo}</div>
+    ${a.ragioneSociale?`<div class="rs" style="font-size:${minPt}pt">${esc(a.ragioneSociale)}</div>`:''}
     <div class="addr" style="font-size:${minPt}pt">${esc(a.indirizzo)}</div>
     ${e.mostraContatti&&a.contatti?`<div class="cont" style="font-size:6pt">${esc(a.contatti)}</div>`:''}
     <div class="pn">${esc(p.nome||'Prodotto')}</div>
@@ -544,6 +553,7 @@ function viewImpostazioni(){
   return `<div class="grid2"><div>
   <div class="card"><h2>Dati in intestazione</h2>
     <div class="row"><label class="f">Nome azienda<input value="${esc(a.nome)}" onchange="setS('azienda.nome',this.value)"></label><label class="f">Sotto il logo<input value="${esc(a.sottotitolo)}" onchange="setS('azienda.sottotitolo',this.value)"></label></div>
+    <div class="row"><label class="f">Ragione sociale (obbligatoria)<input value="${esc(a.ragioneSociale||'')}" onchange="setS('azienda.ragioneSociale',this.value)"></label></div>
     <div class="row"><label class="f">Indirizzo (obbligatorio)<input value="${esc(a.indirizzo)}" onchange="setS('azienda.indirizzo',this.value)"></label></div>
     <div class="row"><label class="f">Contatti<input value="${esc(a.contatti)}" onchange="setS('azienda.contatti',this.value)"></label><label class="chk"><input type="checkbox" ${e.mostraContatti?'checked':''} onchange="setS('etichetta.mostraContatti',this.checked)"> Mostra</label></div>
     <div class="row"><label class="f">Logo<select onchange="setS('logo',this.value)">
@@ -645,7 +655,7 @@ function importCSV(text){
 function merge(a,b){
   const out={version:1,settings:(b.settings?.updatedAt||0)>(a.settings?.updatedAt||0)?b.settings:a.settings,prodotti:[]};
   const m=new Map(); [...(a.prodotti||[]),...(b.prodotti||[])].forEach(p=>{ const o=m.get(p.id); if(!o||(p.updatedAt||0)>(o.updatedAt||0)) m.set(p.id,p); });
-  out.prodotti=[...m.values()]; return out;
+  out.prodotti=[...m.values()]; return normalize(out);
 }
 function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open('mag_etichette',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=rej; }); }
 async function kvSet(k,v){ const d=await idb(); return new Promise(r=>{ const t=d.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=r; }); }
@@ -687,7 +697,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.0';
+const APP_VERSION='0.2.1';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
