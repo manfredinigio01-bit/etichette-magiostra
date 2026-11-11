@@ -189,9 +189,9 @@ function defaultState(){
     version:1,
     settings:{
       updatedAt:t,
-      azienda:{nome:'La Magiostra', sottotitolo:'CUCINA', ragioneSociale:'La Magiostra di Aquilino e C. snc', indirizzo:'Via Grado 1 – 26100 Cremona (CR)', contatti:'Tel. 0372 21415 – aquilinochiara@libero.it'},
-      logo:'sole+scritta', logoCustom:'',
-      etichetta:{w:60,h:70,pad:2.5,minPt:7,maxPt:8.5,allergeniMaiuscolo:false,etichettaProdotto:'Prodotto il:',mostraContatti:true},
+      azienda:{nome:'La Magiostra', sottotitolo:'', ragioneSociale:'La Magiostra di Aquilino e C. snc', indirizzo:'Via Grado 1 – 26100 Cremona (CR)', contatti:'Tel. 0372 21415 – aquilinochiara@libero.it'},
+      logo:'compatto', logoCustom:'', layout024:true,
+      etichetta:{w:60,h:70,pad:2.5,minPt:7,maxPt:8.5,allergeniMaiuscolo:false,etichettaProdotto:'Prodotto il:',mostraContatti:false,mostraProduzione:false,piedeCompatto:true},
       foglio:{preset:'A4_60x70',modo:'a4',pageW:210,pageH:297,cols:3,rows:4,mTop:8.5,mLeft:15,gapX:0,gapY:0,taglio:true},
       pezzature:[{id:'pz1',nome:'250 g',kg:0.25},{id:'pz2',nome:'300 g',kg:0.3},{id:'pz3',nome:'500 g',kg:0.5},{id:'pz4',nome:'1 kg',kg:1}],
       conservazioni:[
@@ -217,6 +217,7 @@ const PRESETS = {
 
 /* ================== STATO ================== */
 let S = load();
+localStorage.setItem('mag_data',JSON.stringify(S)); // salva subito eventuali aggiornamenti di versione
 let DEV = JSON.parse(localStorage.getItem('mag_dev')||'{}');
 DEV = Object.assign({offX:0,offY:0,coda:[],start:0},DEV);
 let TAB='stampa', SEL=null, EDIT=null, Q='';
@@ -227,6 +228,11 @@ function normalize(s){
   const a=s.settings.azienda;
   if(a.ragioneSociale===undefined) a.ragioneSociale='La Magiostra di Aquilino e C. snc';
   if(a.indirizzo==='Via Grado 1 – 26100 Cremona') a.indirizzo='Via Grado 1 – 26100 Cremona (CR)';
+  const st=s.settings;
+  if(!st.layout024){ // scelta di Giovanni 11/11/2026: logo piccolo, niente CUCINA, contatti, data di produzione
+    st.logo='compatto'; a.sottotitolo=''; Object.assign(st.etichetta,{mostraContatti:false,mostraProduzione:false,piedeCompatto:true});
+    st.layout024=true; st.updatedAt=Date.now();
+  }
   return s;
 }
 function load(){ try{ const s=JSON.parse(localStorage.getItem('mag_data')); if(s&&s.settings) return normalize(s); }catch(e){} return defaultState(); }
@@ -730,7 +736,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.3';
+const APP_VERSION='0.2.4';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
