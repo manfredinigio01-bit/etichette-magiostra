@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <title>Etichette La Magiostra</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5f7a50">
 <link rel="icon" href="icons/favicon.png">
@@ -219,11 +221,43 @@ const PRESETS = {
 let S = load();
 localStorage.setItem('mag_data',JSON.stringify(S)); // salva subito eventuali aggiornamenti di versione
 let DEV = JSON.parse(localStorage.getItem('mag_dev')||'{}');
-DEV = Object.assign({offX:0,offY:0,coda:[],start:0},DEV);
+DEV = Object.assign({offX:0,offY:0,coda:[],start:0,nome:''},DEV);
+DEV.offX=Number(DEV.offX)||0; DEV.offY=Number(DEV.offY)||0; DEV.start=Math.max(0,parseInt(DEV.start)||0); DEV.nome=String(DEV.nome||'');
+DEV.coda=(Array.isArray(DEV.coda)?DEV.coda:[]).filter(j=>j&&SAFE_ID.test(j.pid)).map(j=>({pid:j.pid,kg:j.kg==null?null:Number(j.kg),prod:String(j.prod||'').replace(/[^0-9-]/g,''),scad:String(j.scad||'').replace(/[^0-9-]/g,''),lotto:String(j.lotto||''),prezzo:String(j.prezzo??''),showPrice:!!j.showPrice,qty:Math.max(1,parseInt(j.qty)||1)}));
 let TAB='stampa', SEL=null, EDIT=null, Q='';
 let fileHandle=null, lastSync=null, syncTimer=null;
 
+const SAFE_ID=/^[A-Za-z0-9_-]{1,40}$/;
+const LOGHI=['sole+scritta','scritta','sole','compatto','nessuno','custom'];
+const IMG_OK=/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/=]+$/;
+function sanitize(s){
+  // difesa contro file di archivio/backup manomessi: niente codice nascosto nei dati
+  const st=s.settings||{}; s.settings=st;
+  const n=(v,d,min,max)=>{ v=Number(v); return isFinite(v)?Math.min(max,Math.max(min,v)):d; };
+  st.pezzature=(Array.isArray(st.pezzature)?st.pezzature:[]).filter(z=>z&&SAFE_ID.test(z.id)).map(z=>({id:z.id,nome:String(z.nome??''),kg:n(z.kg,0,0,1000)}));
+  st.conservazioni=(Array.isArray(st.conservazioni)?st.conservazioni:[]).filter(c=>c&&SAFE_ID.test(c.id)).map(c=>({id:c.id,testo:String(c.testo??''),tipoData:c.tipoData==='tmc'?'tmc':'scadenza'}));
+  if(!LOGHI.includes(st.logo)) st.logo='compatto';
+  if(st.logoCustom && !IMG_OK.test(st.logoCustom)) st.logoCustom='';
+  const e=st.etichetta=st.etichetta||{};
+  e.w=n(e.w,60,15,300); e.h=n(e.h,70,15,300); e.pad=n(e.pad,2.5,0,20); e.minPt=n(e.minPt,7,7,20); e.maxPt=n(e.maxPt,8.5,7,20);
+  e.etichettaProdotto=String(e.etichettaProdotto??'Prodotto il:');
+  const f=st.foglio=st.foglio||{};
+  f.modo=f.modo==='singola'?'singola':'a4'; if(!PRESETS[f.preset]) f.preset='custom';
+  f.pageW=n(f.pageW,210,50,500); f.pageH=n(f.pageH,297,50,500); f.cols=Math.round(n(f.cols,3,1,20)); f.rows=Math.round(n(f.rows,4,1,30));
+  f.mTop=n(f.mTop,0,-50,300); f.mLeft=n(f.mLeft,0,-50,300); f.gapX=n(f.gapX,0,0,100); f.gapY=n(f.gapY,0,0,100); f.taglio=!!f.taglio;
+  const a=st.azienda=st.azienda||{}; ['nome','sottotitolo','ragioneSociale','indirizzo','contatti'].forEach(k=>{ if(a[k]!==undefined) a[k]=String(a[k]); });
+  const keys=ALLERGENI.map(x=>x.k), pzIds=st.pezzature.map(z=>z.id), csIds=st.conservazioni.map(c=>c.id);
+  s.prodotti=(Array.isArray(s.prodotti)?s.prodotti:[]).filter(p=>p&&SAFE_ID.test(p.id)).map(p=>({...p,
+    nome:String(p.nome??''),sottotitolo:String(p.sottotitolo??''),ingredienti:String(p.ingredienti??''),tracceExtra:String(p.tracceExtra??''),diciture:String(p.diciture??''),
+    prezzoKg:String(p.prezzoKg??''),giorni:Math.round(n(p.giorni,0,0,3650)),tipoData:p.tipoData==='tmc'?'tmc':'scadenza',
+    tracce:(Array.isArray(p.tracce)?p.tracce:[]).filter(k=>keys.includes(k)),
+    pezzature:(Array.isArray(p.pezzature)?p.pezzature:[]).filter(k=>pzIds.includes(k)),
+    conservazione:csIds.includes(p.conservazione)?p.conservazione:'',
+    updatedBy:String(p.updatedBy??''),updatedAt:n(p.updatedAt,0,0,9e15),deleted:!!p.deleted}));
+  return s;
+}
 function normalize(s){
+  sanitize(s);
   // aggiorna dati salvati con versioni precedenti senza cambiare updatedAt (non sovrascrive modifiche di altre postazioni)
   const a=s.settings.azienda;
   if(a.ragioneSociale===undefined) a.ragioneSociale='La Magiostra di Aquilino e C. snc';
@@ -526,6 +560,7 @@ function editorHTML(p){
   const job={pid:'__edit',kg:(getPz(p.pezzature?.[0])||S.settings.pezzature[0]||{}).kg??null,prod:isoToday(),scad:addDays(isoToday(),p.giorni||0),lotto:lotto(isoToday()),prezzo:'',showPrice:false};
   return `<div class="card"><div class="flexsp"><h2>${p._new?'Nuovo prodotto':'Modifica prodotto'}</h2>
     <div><button class="b p" onclick="saveProduct()">Salva</button> ${!p._new?`<button class="b" onclick="dupProduct()">Duplica</button> <button class="b d" onclick="delProduct()">Elimina</button>`:''} <button class="b" onclick="EDIT=null;render()">Chiudi</button></div></div>
+    ${p.updatedAt&&!p._new?`<div class="muted" style="margin-bottom:8px">Ultima modifica: ${new Date(p.updatedAt).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})} · ${esc(p.updatedBy||'—')}</div>`:''}
     <div class="row"><label class="f">Nome (in grande)<input value="${esc(p.nome)}" oninput="ed('nome',this.value)"></label></div>
     <div class="row"><label class="f">Sottotitolo<input value="${esc(p.sottotitolo)}" placeholder="es. con ragù di cavolfiore" oninput="ed('sottotitolo',this.value)"></label></div>
     <div class="row"><label class="f">Ingredienti (in ordine di peso decrescente)<textarea oninput="ed('ingredienti',this.value);document.getElementById('alfound').innerHTML=alFoundHTML(this.value)">${esc(p.ingredienti)}</textarea></label></div>
@@ -572,12 +607,12 @@ function togglePz(k,on){ EDIT.pezzature=(EDIT.pezzature||[]).filter(x=>x!==k); i
 function setCons(id){ EDIT.conservazione=id; const c=getCons(id); if(c) EDIT.tipoData=c.tipoData; render(); }
 function saveProduct(){
   if(!EDIT.nome.trim()){ alert('Inserisci il nome del prodotto'); return; }
-  const p={...EDIT}; delete p._new; p.updatedAt=now();
+  const p={...EDIT}; delete p._new; p.updatedAt=now(); p.updatedBy=DEV.nome||'postazione senza nome';
   const i=S.prodotti.findIndex(x=>x.id===p.id); if(i>=0) S.prodotti[i]=p; else S.prodotti.push(p);
   EDIT=JSON.parse(JSON.stringify(p)); commit(); render();
 }
 function dupProduct(){ EDIT={...JSON.parse(JSON.stringify(EDIT)),id:uid(),nome:EDIT.nome+' (copia)',_new:true}; render(); }
-function delProduct(){ if(!confirm('Eliminare "'+EDIT.nome+'"?')) return; const p=getP(EDIT.id); if(p){p.deleted=true;p.updatedAt=now();} EDIT=null; commit(); render(); }
+function delProduct(){ if(!confirm('Eliminare "'+EDIT.nome+'"?')) return; const p=getP(EDIT.id); if(p){p.deleted=true;p.updatedAt=now();p.updatedBy=DEV.nome||'postazione senza nome';} EDIT=null; commit(); render(); }
 
 /* ---------- IMPOSTAZIONI ---------- */
 function setS(path,v,re=true){ const ks=path.split('.'); let o=S.settings; while(ks.length>1) o=o[ks.shift()]; o[ks[0]]=v; touchSettings(); if(re) render(); }
@@ -594,7 +629,7 @@ function viewImpostazioni(){
     <div class="row"><label class="f">Contatti<input value="${esc(a.contatti)}" onchange="setS('azienda.contatti',this.value)"></label><label class="chk"><input type="checkbox" ${e.mostraContatti?'checked':''} onchange="setS('etichetta.mostraContatti',this.checked)"> Mostra</label></div>
     <div class="row"><label class="f">Logo<select onchange="setS('logo',this.value)">
       ${[['sole+scritta','Sole + scritta (come ora)'],['scritta','Solo scritta'],['sole','Solo sole + nome'],['compatto','Compatto: sole piccolo + dati azienda accanto (più spazio)'],['nessuno','Nessun logo, solo testo'],['custom','Immagine personalizzata']].map(([v,n])=>`<option value="${v}" ${st.logo===v?'selected':''}>${n}</option>`).join('')}</select></label>
-      ${st.logo==='custom'?`<label class="f">Carica logo (PNG/JPG/SVG)<input type="file" accept="image/*" onchange="loadLogo(this)"></label>`:''}</div>
+      ${st.logo==='custom'?`<label class="f">Carica logo (PNG/JPG/SVG)<input type="file" accept="image/png,image/jpeg,image/webp" onchange="loadLogo(this)"></label>`:''}</div>
   </div>
   <div class="card"><h2>Etichetta</h2>
     <div class="row">
@@ -631,6 +666,7 @@ function viewImpostazioni(){
   </div><div>
   <div class="card"><h2>Calibrazione stampante (solo questa postazione)</h2>
     <div class="muted">Ogni computer può avere una stampante diversa: lo spostamento si salva solo qui.</div>
+    <div class="row" style="margin-top:8px"><label class="f">Nome di questa postazione (compare in "Ultima modifica")<input value="${esc(DEV.nome)}" placeholder="es. Mac Giovanni, PC laboratorio" onchange="DEV.nome=this.value.slice(0,40);saveDev()"></label></div>
     <div class="row" style="margin-top:8px">
       <label class="f s">Sposta a destra mm<input value="${DEV.offX}" onchange="DEV.offX=num(this.value)||0;saveDev();render()"></label>
       <label class="f s">Sposta in basso mm<input value="${DEV.offY}" onchange="DEV.offY=num(this.value)||0;saveDev();render()"></label>
@@ -664,9 +700,9 @@ function viewImpostazioni(){
 }
 function applyPreset(k){ const p=PRESETS[k]; const f=S.settings.foglio; f.preset=k; if(k!=='custom'){ Object.assign(f,{cols:p.cols,rows:p.rows,mTop:p.mTop,mLeft:p.mLeft,gapX:p.gapX,gapY:p.gapY,taglio:p.taglio}); S.settings.etichetta.w=p.w; S.settings.etichetta.h=p.h; } touchSettings(); render(); }
 function centerSheet(){ const f=S.settings.foglio,e=S.settings.etichetta; f.mLeft=+((f.pageW-(f.cols*e.w+(f.cols-1)*f.gapX))/2).toFixed(2); f.mTop=+((f.pageH-(f.rows*e.h+(f.rows-1)*f.gapY))/2).toFixed(2); f.preset='custom'; touchSettings(); render(); }
-function loadLogo(inp){ const fr=new FileReader(); fr.onload=()=>{ S.settings.logoCustom=fr.result; touchSettings(); render(); }; fr.readAsDataURL(inp.files[0]); }
+function loadLogo(inp){ const f=inp.files[0]; if(!f) return; if(!/^image\/(png|jpeg|webp)$/.test(f.type)||f.size>2e6){ alert('Usa un\'immagine PNG o JPG sotto i 2 MB'); return; } const fr=new FileReader(); fr.onload=()=>{ if(!IMG_OK.test(fr.result)) return alert('Immagine non valida'); S.settings.logoCustom=fr.result; touchSettings(); render(); }; fr.readAsDataURL(f); }
 function exportJSON(){ const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='etichette-magiostra-backup-'+isoToday()+'.json'; a.click(); }
-function importJSON(inp){ inp.files[0].text().then(t=>{ try{ const d=JSON.parse(t); if(!d.settings||!d.prodotti) throw 0; if(!confirm('Unire il backup con i dati attuali? (vince la versione più recente di ogni prodotto)')) return; S=merge(S,d); commit(); render(); alert('Importato.'); }catch(e){ alert('File non valido'); } }); }
+function importJSON(inp){ if(inp.files[0].size>20e6){ alert('File troppo grande'); return; } inp.files[0].text().then(t=>{ try{ const d=JSON.parse(t); if(!d.settings||!d.prodotti) throw 0; if(!confirm('Unire il backup con i dati attuali? (vince la versione più recente di ogni prodotto)')) return; S=merge(S,d); commit(); render(); alert('Importato.'); }catch(e){ alert('File non valido'); } }); }
 function importCSV(text){
   text=String(text||'').replace(/^﻿/,'').trim(); if(!text) return;
   const lines=text.split(/\r?\n/).filter(l=>l.trim());
@@ -734,7 +770,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.5';
+const APP_VERSION='0.2.6';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
