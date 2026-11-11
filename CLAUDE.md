@@ -26,6 +26,19 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - Prezzo: mostrato con €/kg. Avviso se compare "bio/biologico" (negozio non certificato).
 - Lotto = AAAAMMGG della data di produzione.
 
+## Decisioni di Giovanni (11/11/2026)
+- Si lavora solo dalla chat Claude del progetto; Claude pubblica direttamente su `main`.
+- Layout predefinito: logo **compatto** (sole piccolo + ragione sociale + indirizzo), niente "CUCINA", niente telefono/email, niente data di produzione stampata, piè di pagina compatto. Migrazione una tantum tramite flag `settings.layout024`.
+- Testo **sempre a 7 pt** (minimo di legge), mai ingrandito; nome prodotto 9 pt. La stampa è BLOCCATA se il testo non entra (niente eccezioni sotto i 7 pt).
+- Ragione sociale: "La Magiostra di Aquilino e C. snc", Via Grado 1 – 26100 Cremona (CR).
+- Formati: oggi 60×70 (circa 510 caratteri di ingredienti con prezzo); preset A4 66×80 (circa 740).
+
+## Sicurezza (v0.2.6)
+- CSP: `connect-src 'self'`, nessuna risorsa esterna. Non aggiungere CDN, analytics o font esterni.
+- `sanitize()` ripulisce ogni dato caricato (archivio condiviso, backup, localStorage): id solo `[A-Za-z0-9_-]`, numeri limitati, logo solo data:image png/jpeg/webp. Ogni campo nuovo va aggiunto lì.
+- Tutto il testo inserito nell'HTML passa da `esc()`.
+- `updatedBy` = nome postazione (DEV.nome) su prodotti salvati/eliminati.
+
 ## Da fare / idee
 - Importazione dati dal vecchio software Helmac HLL (formato da scoprire).
 - Formato etichetta definitivo e fogli adesivi laser da scegliere (stampante Samsung laser).
