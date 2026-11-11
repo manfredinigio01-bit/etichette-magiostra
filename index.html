@@ -79,6 +79,10 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 .lbl .fit b.al{font-weight:900}
 .lbl .fit .cons{font-weight:700}
 .lbl .ft{border-top:0.25mm solid #000;padding-top:.8mm;margin-top:.6mm}
+.lbl .hc{flex:1;min-width:0;line-height:1.15}
+.lbl .hc .rsc{font-weight:700}
+.lbl .ft.fc .big{font-weight:700;font-size:8.5pt;white-space:nowrap}
+.lbl .ft.fc .r2{display:flex;justify-content:space-between;gap:1mm;align-items:baseline}
 .lbl .ft .sc .big{font-weight:700;font-size:8.5pt;white-space:nowrap}
 .lbl .ft .ftr{display:flex;gap:1.5mm;align-items:flex-end;margin-top:.5mm}
 .lbl .ft .dl{flex:1;min-width:0}
@@ -261,23 +265,25 @@ function labelHTML(job, opts={}){
   const scadLbl = tipo==='tmc' ? 'Da consumarsi preferibilmente entro il:' : 'Da consumarsi entro il:';
   const W=e.w, H=e.h, P=e.pad;
   const soleH = Math.min(12, H*0.155);
+  const minPt=Math.max(MIN_LEGALE,e.minPt);
+  const compatto = st.logo==='compatto';
   let logo='';
   const lg = st.logo;
   if(lg==='sole+scritta') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${soleH}mm"><div class="hr"><img class="scritta" src="${LOGO_SCRITTA}" style="max-height:${soleH*0.78}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else if(lg==='scritta') logo=`<div class="hr"><img class="scritta" src="${LOGO_SCRITTA}" style="max-height:${soleH*0.85}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else if(lg==='sole') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${soleH}mm"><div class="hr"><div class="aznome">${esc(a.nome)}</div>${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
+  else if(lg==='compatto') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${Math.min(9.5,H*0.13)}mm"><div class="hc" style="font-size:${minPt}pt"><div class="rsc">${esc(a.ragioneSociale||a.nome)}</div><div>${esc(a.indirizzo)}</div>${e.mostraContatti&&a.contatti?`<div style="font-size:6pt">${esc(a.contatti)}</div>`:''}</div>`;
   else if(lg==='custom' && st.logoCustom) logo=`<div class="hr"><img class="scritta" src="${st.logoCustom}" style="max-height:${soleH}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else logo=`<div class="hr"><div class="aznome">${esc(a.nome)}</div>${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   const kg = job.kg;
   const prezzo = job.prezzo!=null && job.prezzo!=='' ? num(job.prezzo) : null;
   const pkg = num(p.prezzoKg);
   const tr = tracceText(p);
-  const minPt=e.minPt;
   return `<div class="lbl ${opts.cut?'cut':''}" style="width:${W}mm;height:${H}mm"><div class="in" style="padding:${P}mm">
     <div class="hd">${logo}</div>
-    ${a.ragioneSociale?`<div class="rs" style="font-size:${minPt}pt">${esc(a.ragioneSociale)}</div>`:''}
+    ${compatto?'':`${a.ragioneSociale?`<div class="rs" style="font-size:${minPt}pt">${esc(a.ragioneSociale)}</div>`:''}
     <div class="addr" style="font-size:${minPt}pt">${esc(a.indirizzo)}</div>
-    ${e.mostraContatti&&a.contatti?`<div class="cont" style="font-size:6pt">${esc(a.contatti)}</div>`:''}
+    ${e.mostraContatti&&a.contatti?`<div class="cont" style="font-size:6pt">${esc(a.contatti)}</div>`:''}`}
     <div class="pn">${esc(p.nome||'Prodotto')}</div>
     ${p.sottotitolo?`<div class="ps">${esc(p.sottotitolo)}</div>`:''}
     <div class="body"><div class="fit">
@@ -286,14 +292,18 @@ function labelHTML(job, opts={}){
       ${cons?`<p class="cons">${esc(cons.testo)}</p>`:''}
       ${p.diciture?`<p>${esc(p.diciture)}</p>`:''}
     </div></div>
-    <div class="ft" style="font-size:${minPt}pt">
+    ${e.piedeCompatto ? `<div class="ft fc" style="font-size:${minPt}pt">
+      <div>${scadLbl} <b class="big">${fmtD(job.scad)}</b></div>
+      <div class="r2"><span>Lotto: <b>${esc(job.lotto)}</b>${e.mostraProduzione!==false?` · ${esc(e.etichettaProdotto.replace(/:$/,''))} ${fmtD(job.prod)}`:''}</span><span>Peso netto <b class="big">${kg!=null?kgFmt(kg)+' kg':'—'}</b></span></div>
+      ${job.showPrice && prezzo!=null ? `<div class="r2"><span>${pkg!=null?'€/kg '+eur(pkg):''}</span><span>Prezzo <b class="big">€ ${eur(prezzo)}</b></span></div>`:''}
+    </div>` : `<div class="ft" style="font-size:${minPt}pt">
       <div class="sc">${scadLbl} <b class="big">${fmtD(job.scad)}</b></div>
       <div class="ftr">
-        <div class="dl"><div>${esc(e.etichettaProdotto)} ${fmtD(job.prod)}</div><div>Lotto: <b>${esc(job.lotto)}</b></div></div>
+        <div class="dl">${e.mostraProduzione!==false?`<div>${esc(e.etichettaProdotto)} ${fmtD(job.prod)}</div>`:''}<div>Lotto: <b>${esc(job.lotto)}</b></div></div>
         <div class="box"><span class="k">Peso netto</span> <span class="v">${kg!=null?kgFmt(kg)+' kg':'—'}</span>
         ${job.showPrice && prezzo!=null ? `<div class="pr">${pkg!=null?`<span class="k">€/kg ${eur(pkg)}</span> · `:''}<span class="k">Prezzo</span> <span class="v">€ ${eur(prezzo)}</span></div>`:''}</div>
       </div>
-    </div>
+    </div>`}
   </div></div>`;
 }
 const MIN_LEGALE=7; // pt: x-height ≈ 1,28 mm in Arial (Reg. UE 1169/2011 art. 13: ≥ 1,2 mm)
@@ -578,7 +588,7 @@ function viewImpostazioni(){
     <div class="row"><label class="f">Indirizzo (obbligatorio)<input value="${esc(a.indirizzo)}" onchange="setS('azienda.indirizzo',this.value)"></label></div>
     <div class="row"><label class="f">Contatti<input value="${esc(a.contatti)}" onchange="setS('azienda.contatti',this.value)"></label><label class="chk"><input type="checkbox" ${e.mostraContatti?'checked':''} onchange="setS('etichetta.mostraContatti',this.checked)"> Mostra</label></div>
     <div class="row"><label class="f">Logo<select onchange="setS('logo',this.value)">
-      ${[['sole+scritta','Sole + scritta (come ora)'],['scritta','Solo scritta'],['sole','Solo sole + nome'],['nessuno','Nessun logo, solo testo'],['custom','Immagine personalizzata']].map(([v,n])=>`<option value="${v}" ${st.logo===v?'selected':''}>${n}</option>`).join('')}</select></label>
+      ${[['sole+scritta','Sole + scritta (come ora)'],['scritta','Solo scritta'],['sole','Solo sole + nome'],['compatto','Compatto: sole piccolo + dati azienda accanto (più spazio)'],['nessuno','Nessun logo, solo testo'],['custom','Immagine personalizzata']].map(([v,n])=>`<option value="${v}" ${st.logo===v?'selected':''}>${n}</option>`).join('')}</select></label>
       ${st.logo==='custom'?`<label class="f">Carica logo (PNG/JPG/SVG)<input type="file" accept="image/*" onchange="loadLogo(this)"></label>`:''}</div>
   </div>
   <div class="card"><h2>Etichetta</h2>
@@ -593,6 +603,8 @@ function viewImpostazioni(){
       <label class="f">Dicitura data produzione<input value="${esc(e.etichettaProdotto)}" onchange="setS('etichetta.etichettaProdotto',this.value)"></label>
     </div>
     <label class="chk"><input type="checkbox" ${e.allergeniMaiuscolo?'checked':''} onchange="setS('etichetta.allergeniMaiuscolo',this.checked)"> Allergeni anche in MAIUSCOLO</label>
+    <label class="chk"><input type="checkbox" ${e.mostraProduzione!==false?'checked':''} onchange="setS('etichetta.mostraProduzione',this.checked)"> Stampa la data di produzione (facoltativa)</label>
+    <label class="chk"><input type="checkbox" ${e.piedeCompatto?'checked':''} onchange="setS('etichetta.piedeCompatto',this.checked)"> Piè di pagina compatto (date, lotto e peso su righe, senza riquadro)</label>
     <div class="muted" style="margin-top:8px">Il testo degli ingredienti si riduce da solo fino al minimo, mai sotto i 7 pt (circa 1,28 mm di altezza delle minuscole, Reg. UE 1169/2011 art. 13). Se non entra, la stampa viene bloccata: serve un formato più grande o un testo più corto.</div>
   </div>
   <div class="card"><h2>Foglio di stampa</h2>
@@ -718,7 +730,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.2';
+const APP_VERSION='0.2.3';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
