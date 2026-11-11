@@ -87,7 +87,7 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 .lbl .ft .box .v{font-weight:700;font-size:9.5pt;white-space:nowrap}
 .lbl .ft .box .pr{border-top:0.2mm solid #000;margin-top:.3mm;padding-top:.2mm}
 .lbl.toosmall::after{content:"⚠ testo sotto il minimo";position:absolute;right:0;top:0;background:#b3261e;color:#fff;font-size:6pt;padding:.3mm 1mm}
-.lbl.overflow::after{content:"⚠ TESTO TAGLIATO";position:absolute;right:0;top:0;background:#b3261e;color:#fff;font-size:7pt;padding:.4mm 1mm}
+.lbl.overflow::after{content:"⚠ NON ENTRA A NORMA";position:absolute;right:0;top:0;background:#b3261e;color:#fff;font-size:7pt;padding:.4mm 1mm}
 
 /* ===== AREA DI STAMPA ===== */
 #print{position:absolute;left:-30000px;top:0}
@@ -206,6 +206,7 @@ function defaultState(){
 }
 const PRESETS = {
   L7164:{nome:'Avery L7164 – 63,5×72 mm, 12 per foglio (laser)',w:63.5,h:72,cols:3,rows:4,mTop:4.5,mLeft:7.25,gapX:2.5,gapY:0,taglio:false},
+  A4_66x80:{nome:'Carta normale A4 – 66×80 mm, 9 per foglio, con linee di taglio (a norma per ricette lunghe)',w:66,h:80,cols:3,rows:3,mTop:28.5,mLeft:6,gapX:0,gapY:0,taglio:true},
   A4_60x70:{nome:'Carta normale A4 – 60×70 mm, 12 per foglio, con linee di taglio',w:60,h:70,cols:3,rows:4,mTop:8.5,mLeft:15,gapX:0,gapY:0,taglio:true},
   custom:{nome:'Personalizzato'}
 };
@@ -295,13 +296,14 @@ function labelHTML(job, opts={}){
     </div>
   </div></div>`;
 }
+const MIN_LEGALE=7; // pt: x-height ≈ 1,28 mm in Arial (Reg. UE 1169/2011 art. 13: ≥ 1,2 mm)
 function fitLabels(root){
   const e=S.settings.etichetta;
   root.querySelectorAll('.lbl').forEach(l=>{
     const body=l.querySelector('.body'), fit=l.querySelector('.fit'); if(!body||!fit) return;
     let size=e.maxPt; fit.style.fontSize=size+'pt';
-    while(fit.offsetHeight>body.clientHeight+0.5 && size>5){ size-=0.25; fit.style.fontSize=size+'pt'; }
-    l.classList.toggle('toosmall', size<e.minPt);
+    const minPt=Math.max(MIN_LEGALE,e.minPt);
+    while(fit.offsetHeight>body.clientHeight+0.5 && size>minPt){ size-=0.25; fit.style.fontSize=size+'pt'; }
     l.classList.toggle('overflow', fit.offsetHeight>body.clientHeight+0.5);
     l.dataset.pt=size;
   });
@@ -343,7 +345,7 @@ function doPrint(jobs, start){
   pr.innerHTML = buildSheets(labels, f.modo==='singola'?0:start);
   fitLabels(pr);
   const bad = pr.querySelectorAll('.lbl.overflow').length;
-  if(bad && !confirm(`${bad} etichett${bad>1?'e hanno':'a ha'} il testo TAGLIATO (non entra). Stampare comunque?`)) return;
+  if(bad){ pr.innerHTML=''; alert(`Stampa bloccata: ${bad} etichett${bad>1?'e non rispettano':'a non rispetta'} il carattere minimo di legge (7 pt) perché il testo non entra.\n\nScegli un formato più grande in Impostazioni → Foglio di stampa, oppure accorcia il testo del prodotto.`); return; }
   if(f.modo==='a4'){ const per=f.cols*f.rows; DEV.start=((start||0)+jobs.length)%per; saveDev(); }
   setTimeout(()=>{window.print(); render();},50);
 }
@@ -374,6 +376,24 @@ function render(){
 }
 function afterRender(){
   document.querySelectorAll('[data-fit]').forEach(fitLabels);
+  const fw=document.getElementById('fitwarn');
+  if(fw && document.querySelector('.prevwrap .lbl.overflow')) fw.innerHTML=`<div class="err">Con il formato attuale (${S.settings.etichetta.w}×${S.settings.etichetta.h} mm) questo prodotto non entra a norma di legge (carattere minimo 7 pt): la stampa è bloccata. Scegli un formato più grande in Impostazioni o accorcia il testo.</div>`;
+  if(TAB==='prodotti') markNonFit();
+}
+function prodJob(p,price){
+  const z=getPz((p.pezzature&&p.pezzature[0]))||S.settings.pezzature[0]||{};
+  const pk=num(p.prezzoKg), kg=z.kg??0.25;
+  return {pid:p.id,kg,prod:isoToday(),scad:addDays(isoToday(),p.giorni||0),lotto:lotto(isoToday()),prezzo:pk!=null?(pk*kg).toFixed(2):'9.99',showPrice:price};
+}
+function markNonFit(){
+  const tmp=document.getElementById('print'); let n=0;
+  document.querySelectorAll('.plist .it[data-id]').forEach(it=>{
+    const p=getP(it.dataset.id); if(!p) return;
+    tmp.innerHTML=labelHTML(prodJob(p, num(p.prezzoKg)!=null)); fitLabels(tmp);
+    if(tmp.querySelector('.lbl.overflow')){ n++; it.querySelector('.nf')?.classList.remove('hidden'); }
+  });
+  tmp.innerHTML='';
+  const c=document.getElementById('nfcount'); if(c) c.textContent = n ? `${n} non entrano a norma nel formato ${S.settings.etichetta.w}×${S.settings.etichetta.h} mm` : '';
 }
 
 /* ---------- STAMPA ---------- */
@@ -440,6 +460,7 @@ function viewStampa(){
   <div>
     ${p?`<div class="card"><div class="flexsp"><h2>Anteprima</h2><span class="muted" id="ptinfo"></span></div>
       <div class="prevwrap" data-fit>${scaled(labelHTML(j),2.3)}</div>
+      <div id="fitwarn"></div>
       <div class="muted" style="margin-top:6px">Gli allergeni in grassetto sono rilevati in automatico: controlla sempre. Per forzare il grassetto scrivi la parola tra asterischi nella scheda prodotto, es. *farina di farro*.</div>
     </div>`:''}
     <div class="card"><div class="flexsp"><h2>Coda di stampa</h2><span class="pill">${nLab} etichette${f.modo==='a4'?' · '+Math.ceil((nLab+DEV.start)/per||0)+' fogli':''}</span></div>
@@ -471,9 +492,9 @@ function viewProdotti(){
   const ps=prodotti().filter(p=>!Q||(p.nome+' '+(p.sottotitolo||'')+' '+p.ingredienti).toLowerCase().includes(Q.toLowerCase()));
   const p = EDIT ? EDIT : null;
   return `<div class="grid2">
-   <div class="card"><div class="flexsp"><h2>Prodotti (${prodotti().length})</h2><button class="b p sm" onclick="newProduct()">+ Nuovo prodotto</button></div>
+   <div class="card"><div class="flexsp"><h2>Prodotti (${prodotti().length}) <span class="muted" id="nfcount" style="font-weight:400;color:#b3261e"></span></h2><button class="b p sm" onclick="newProduct()">+ Nuovo prodotto</button></div>
     <input placeholder="Cerca per nome o ingrediente…" value="${esc(Q)}" oninput="Q=this.value;render();setTimeout(()=>{const q=document.getElementById('qb2');q.focus();q.setSelectionRange(q.value.length,q.value.length)})" id="qb2" style="width:100%;margin:6px 0 8px">
-    <div class="plist" style="max-height:640px">${ps.map(x=>{const al=highlight(x.ingredienti).found.filter(k=>!k.startsWith('manuale'));return `<div class="it ${EDIT&&EDIT.id===x.id?'on':''}" onclick="editProduct('${x.id}')"><span><b>${esc(x.nome)}</b> <span class="muted">${esc(x.sottotitolo||'')}</span><br>${al.map(k=>`<span class="tag a">${ALLERGENI.find(a=>a.k===k).n}</span>`).join('')}</span><span class="muted" style="white-space:nowrap">${x.giorni||0} gg${num(x.prezzoKg)!=null?'<br>€/kg '+eur(num(x.prezzoKg)):''}</span></div>`}).join('')||'<div class="it muted">Nessun prodotto</div>'}</div>
+    <div class="plist" style="max-height:640px">${ps.map(x=>{const al=highlight(x.ingredienti).found.filter(k=>!k.startsWith('manuale'));return `<div class="it ${EDIT&&EDIT.id===x.id?'on':''}" data-id="${x.id}" onclick="editProduct('${x.id}')"><span><b>${esc(x.nome)}</b> <span class="tag nf hidden" style="background:#fdecea;color:#7a1712">non entra</span> <span class="muted">${esc(x.sottotitolo||'')}</span><br>${al.map(k=>`<span class="tag a">${ALLERGENI.find(a=>a.k===k).n}</span>`).join('')}</span><span class="muted" style="white-space:nowrap">${x.giorni||0} gg${num(x.prezzoKg)!=null?'<br>€/kg '+eur(num(x.prezzoKg)):''}</span></div>`}).join('')||'<div class="it muted">Nessun prodotto</div>'}</div>
    </div>
    <div>${p?editorHTML(p):'<div class="card muted">Seleziona un prodotto a sinistra o creane uno nuovo.</div>'}</div>
   </div>`;
@@ -568,11 +589,11 @@ function viewImpostazioni(){
     </div>
     <div class="row">
       <label class="f s">Testo max (pt)<input value="${e.maxPt}" onchange="setS('etichetta.maxPt',num(this.value)||9)"></label>
-      <label class="f s">Testo minimo (pt)<input value="${e.minPt}" onchange="setS('etichetta.minPt',num(this.value)||7)"></label>
+      <label class="f s">Testo minimo (pt)<input value="${Math.max(MIN_LEGALE,e.minPt)}" onchange="setS('etichetta.minPt',Math.max(MIN_LEGALE,num(this.value)||MIN_LEGALE))"></label>
       <label class="f">Dicitura data produzione<input value="${esc(e.etichettaProdotto)}" onchange="setS('etichetta.etichettaProdotto',this.value)"></label>
     </div>
     <label class="chk"><input type="checkbox" ${e.allergeniMaiuscolo?'checked':''} onchange="setS('etichetta.allergeniMaiuscolo',this.checked)"> Allergeni anche in MAIUSCOLO</label>
-    <div class="muted" style="margin-top:8px">Il testo degli ingredienti si riduce da solo fino al minimo. Sotto i 7 pt (circa 1,2 mm di altezza delle minuscole) rischi di non rispettare la leggibilità minima richiesta dal Reg. UE 1169/2011.</div>
+    <div class="muted" style="margin-top:8px">Il testo degli ingredienti si riduce da solo fino al minimo, mai sotto i 7 pt (circa 1,28 mm di altezza delle minuscole, Reg. UE 1169/2011 art. 13). Se non entra, la stampa viene bloccata: serve un formato più grande o un testo più corto.</div>
   </div>
   <div class="card"><h2>Foglio di stampa</h2>
     <div class="row"><label class="f">Modalità<select onchange="setS('foglio.modo',this.value)"><option value="a4" ${f.modo==='a4'?'selected':''}>Foglio A4 (pretagliato o carta normale)</option><option value="singola" ${f.modo==='singola'?'selected':''}>Una etichetta per pagina (formato carta = etichetta)</option></select></label></div>
@@ -697,7 +718,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.1';
+const APP_VERSION='0.2.2';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
