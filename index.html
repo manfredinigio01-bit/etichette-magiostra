@@ -67,13 +67,13 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 .lbl .hd img.sole{flex:0 0 auto}
 .lbl .hd .hr{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center}
 .lbl .hd img.scritta{max-width:100%;display:block}
-.lbl .azsub{font-family:Georgia,"Times New Roman",serif;letter-spacing:.18em;font-size:8pt;margin-top:.6mm;line-height:1}
+.lbl .azsub{font-family:Georgia,"Times New Roman",serif;letter-spacing:.18em;font-size:var(--m);margin-top:.6mm;line-height:1}
 .lbl .aznome{font-family:Georgia,serif;font-size:13pt;font-style:italic}
 .lbl .rs{text-align:center;font-weight:700;margin-top:.6mm;white-space:nowrap}
 .lbl .addr{text-align:center;white-space:nowrap}
 .lbl .cont{text-align:center}
-.lbl .pn{font-weight:700;text-align:center;margin-top:1.1mm;font-size:11pt;line-height:1.05;text-transform:uppercase}
-.lbl .ps{text-align:center;font-size:8pt;margin-top:.2mm}
+.lbl .pn{font-weight:700;text-align:center;margin-top:1mm;font-size:9pt;line-height:1.05;text-transform:uppercase}
+.lbl .ps{text-align:center;font-size:var(--m);margin-top:.2mm}
 .lbl .body{flex:1;min-height:0;overflow:hidden;margin-top:1.2mm}
 .lbl .fit p{margin:0 0 .7mm 0;text-align:left}
 .lbl .fit b.al{font-weight:900}
@@ -81,14 +81,14 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 .lbl .ft{border-top:0.25mm solid #000;padding-top:.8mm;margin-top:.6mm}
 .lbl .hc{flex:1;min-width:0;line-height:1.15}
 .lbl .hc .rsc{font-weight:700}
-.lbl .ft.fc .big{font-weight:700;font-size:8.5pt;white-space:nowrap}
+.lbl .ft.fc .big{font-weight:700;font-size:var(--m);white-space:nowrap}
 .lbl .ft.fc .r2{display:flex;justify-content:space-between;gap:1mm;align-items:baseline}
-.lbl .ft .sc .big{font-weight:700;font-size:8.5pt;white-space:nowrap}
+.lbl .ft .sc .big{font-weight:700;font-size:var(--m);white-space:nowrap}
 .lbl .ft .ftr{display:flex;gap:1.5mm;align-items:flex-end;margin-top:.5mm}
 .lbl .ft .dl{flex:1;min-width:0}
 .lbl .ft .box{flex:0 0 auto;border:0.35mm solid #000;border-radius:1.2mm;padding:.4mm 1.2mm;text-align:right}
-.lbl .ft .box .k{font-size:6pt}
-.lbl .ft .box .v{font-weight:700;font-size:9.5pt;white-space:nowrap}
+.lbl .ft .box .k{font-size:var(--m)}
+.lbl .ft .box .v{font-weight:700;font-size:var(--m);white-space:nowrap}
 .lbl .ft .box .pr{border-top:0.2mm solid #000;margin-top:.3mm;padding-top:.2mm}
 .lbl.toosmall::after{content:"⚠ testo sotto il minimo";position:absolute;right:0;top:0;background:#b3261e;color:#fff;font-size:6pt;padding:.3mm 1mm}
 .lbl.overflow::after{content:"⚠ NON ENTRA A NORMA";position:absolute;right:0;top:0;background:#b3261e;color:#fff;font-size:7pt;padding:.4mm 1mm}
@@ -278,18 +278,18 @@ function labelHTML(job, opts={}){
   if(lg==='sole+scritta') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${soleH}mm"><div class="hr"><img class="scritta" src="${LOGO_SCRITTA}" style="max-height:${soleH*0.78}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else if(lg==='scritta') logo=`<div class="hr"><img class="scritta" src="${LOGO_SCRITTA}" style="max-height:${soleH*0.85}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else if(lg==='sole') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${soleH}mm"><div class="hr"><div class="aznome">${esc(a.nome)}</div>${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
-  else if(lg==='compatto') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${Math.min(9.5,H*0.13)}mm"><div class="hc" style="font-size:${minPt}pt"><div class="rsc">${esc(a.ragioneSociale||a.nome)}</div><div>${esc(a.indirizzo)}</div>${e.mostraContatti&&a.contatti?`<div style="font-size:6pt">${esc(a.contatti)}</div>`:''}</div>`;
+  else if(lg==='compatto') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${Math.min(9.5,H*0.13)}mm"><div class="hc" style="font-size:${minPt}pt"><div class="rsc">${esc(a.ragioneSociale||a.nome)}</div><div>${esc(a.indirizzo)}</div>${e.mostraContatti&&a.contatti?`<div>${esc(a.contatti)}</div>`:''}</div>`;
   else if(lg==='custom' && st.logoCustom) logo=`<div class="hr"><img class="scritta" src="${st.logoCustom}" style="max-height:${soleH}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else logo=`<div class="hr"><div class="aznome">${esc(a.nome)}</div>${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   const kg = job.kg;
   const prezzo = job.prezzo!=null && job.prezzo!=='' ? num(job.prezzo) : null;
   const pkg = num(p.prezzoKg);
   const tr = tracceText(p);
-  return `<div class="lbl ${opts.cut?'cut':''}" style="width:${W}mm;height:${H}mm"><div class="in" style="padding:${P}mm">
+  return `<div class="lbl ${opts.cut?'cut':''}" style="width:${W}mm;height:${H}mm;--m:${minPt}pt"><div class="in" style="padding:${P}mm">
     <div class="hd">${logo}</div>
     ${compatto?'':`${a.ragioneSociale?`<div class="rs" style="font-size:${minPt}pt">${esc(a.ragioneSociale)}</div>`:''}
     <div class="addr" style="font-size:${minPt}pt">${esc(a.indirizzo)}</div>
-    ${e.mostraContatti&&a.contatti?`<div class="cont" style="font-size:6pt">${esc(a.contatti)}</div>`:''}`}
+    ${e.mostraContatti&&a.contatti?`<div class="cont" style="font-size:${minPt}pt">${esc(a.contatti)}</div>`:''}`}
     <div class="pn">${esc(p.nome||'Prodotto')}</div>
     ${p.sottotitolo?`<div class="ps">${esc(p.sottotitolo)}</div>`:''}
     <div class="body"><div class="fit">
@@ -317,9 +317,8 @@ function fitLabels(root){
   const e=S.settings.etichetta;
   root.querySelectorAll('.lbl').forEach(l=>{
     const body=l.querySelector('.body'), fit=l.querySelector('.fit'); if(!body||!fit) return;
-    let size=e.maxPt; fit.style.fontSize=size+'pt';
-    const minPt=Math.max(MIN_LEGALE,e.minPt);
-    while(fit.offsetHeight>body.clientHeight+0.5 && size>minPt){ size-=0.25; fit.style.fontSize=size+'pt'; }
+    // scelta di Giovanni: testo sempre al minimo consentito dalla legge, mai più grande
+    const size=Math.max(MIN_LEGALE,e.minPt); fit.style.fontSize=size+'pt';
     l.classList.toggle('overflow', fit.offsetHeight>body.clientHeight+0.5);
     l.dataset.pt=size;
   });
@@ -604,14 +603,13 @@ function viewImpostazioni(){
       <label class="f s">Margine interno mm<input value="${e.pad}" onchange="setS('etichetta.pad',num(this.value)??2.5)"></label>
     </div>
     <div class="row">
-      <label class="f s">Testo max (pt)<input value="${e.maxPt}" onchange="setS('etichetta.maxPt',num(this.value)||9)"></label>
-      <label class="f s">Testo minimo (pt)<input value="${Math.max(MIN_LEGALE,e.minPt)}" onchange="setS('etichetta.minPt',Math.max(MIN_LEGALE,num(this.value)||MIN_LEGALE))"></label>
+      <label class="f s">Dimensione testo (pt, min. 7)<input value="${Math.max(MIN_LEGALE,e.minPt)}" onchange="setS('etichetta.minPt',Math.max(MIN_LEGALE,num(this.value)||MIN_LEGALE))"></label>
       <label class="f">Dicitura data produzione<input value="${esc(e.etichettaProdotto)}" onchange="setS('etichetta.etichettaProdotto',this.value)"></label>
     </div>
     <label class="chk"><input type="checkbox" ${e.allergeniMaiuscolo?'checked':''} onchange="setS('etichetta.allergeniMaiuscolo',this.checked)"> Allergeni anche in MAIUSCOLO</label>
     <label class="chk"><input type="checkbox" ${e.mostraProduzione!==false?'checked':''} onchange="setS('etichetta.mostraProduzione',this.checked)"> Stampa la data di produzione (facoltativa)</label>
     <label class="chk"><input type="checkbox" ${e.piedeCompatto?'checked':''} onchange="setS('etichetta.piedeCompatto',this.checked)"> Piè di pagina compatto (date, lotto e peso su righe, senza riquadro)</label>
-    <div class="muted" style="margin-top:8px">Il testo degli ingredienti si riduce da solo fino al minimo, mai sotto i 7 pt (circa 1,28 mm di altezza delle minuscole, Reg. UE 1169/2011 art. 13). Se non entra, la stampa viene bloccata: serve un formato più grande o un testo più corto.</div>
+    <div class="muted" style="margin-top:8px">Tutto il testo è stampato alla dimensione minima consentita (il nome prodotto a 9 pt), mai sotto i 7 pt (circa 1,28 mm di altezza delle minuscole, Reg. UE 1169/2011 art. 13). Se non entra, la stampa viene bloccata: serve un formato più grande o un testo più corto.</div>
   </div>
   <div class="card"><h2>Foglio di stampa</h2>
     <div class="row"><label class="f">Modalità<select onchange="setS('foglio.modo',this.value)"><option value="a4" ${f.modo==='a4'?'selected':''}>Foglio A4 (pretagliato o carta normale)</option><option value="singola" ${f.modo==='singola'?'selected':''}>Una etichetta per pagina (formato carta = etichetta)</option></select></label></div>
@@ -736,7 +734,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.4';
+const APP_VERSION='0.2.5';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
