@@ -153,7 +153,7 @@ const ALLERGENI = [
  {k:'molluschi', n:'Molluschi', t:'molluschi', w:['molluschi','cozze','vongole','calamari','calamaro','polpo','seppia','seppie','ostriche']}
 ];
 // frasi in cui la PRIMA parola NON è un allergene (le altre parole vengono comunque controllate)
-const ESCLUSIONI = ['latte di cocco','latte di riso','latte di soia','latte di mandorla','latte di mandorle','latte di avena','latte di nocciola','latte di nocciole','latte di anacardi','latte vegetale','latte di canapa','latte di miglio','latte di farro','burro di cacao','burro di karité','burro di arachidi','burro di mandorle','burro vegetale','burro di cocco','burro di nocciole','panna vegetale','panna di soia','panna di cocco','panna di riso','panna di avena','panna di mandorle','formaggio vegetale','formaggio vegano','formaggi vegetali','yogurt di soia','yogurt vegetale','yogurt di cocco','noce moscata','noce di cocco','noci di cocco','semola di riso','semola di mais','burro di anacardi'];
+const ESCLUSIONI = ['latte di cocco','latte di riso','latte di soia','latte di mandorla','latte di mandorle','latte di avena','latte di nocciola','latte di nocciole','latte di anacardi','latte vegetale','latte di canapa','latte di miglio','latte di farro','burro di cacao','burro di karité','burro di arachidi','burro di mandorle','burro vegetale','burro di cocco','burro di nocciole','panna vegetale','panna di soia','panna di cocco','panna di riso','panna di avena','panna di mandorle','formaggio vegetale','formaggio vegano','formaggi vegetali','yogurt di soia','yogurt vegetale','yogurt di cocco','noce moscata','noce di cocco','noci di cocco','semola di riso','semola di mais','grano saraceno','farina di grano saraceno','burro di anacardi'];
 
 const W2A = {}; ALLERGENI.forEach(a=>a.w.forEach(w=>W2A[w]=a.k));
 const ALL_WORDS = Object.keys(W2A).sort((a,b)=>b.length-a.length);
@@ -169,7 +169,7 @@ function highlight(text, upper){
   parts.forEach((seg,i)=>{
     if(i%2===1){ html += `<b class="al">${esc(upper?seg.toUpperCase():seg)}</b>`; const k=W2A[seg.toLowerCase()]; if(k)found.add(k); else found.add('manuale:'+seg); return; }
     const prot=[]; let m; RE_EXC.lastIndex=0;
-    while((m=RE_EXC.exec(seg))){ const fw=m[1].split(' ')[0]; prot.push([m.index,m.index+fw.length]); }
+    while((m=RE_EXC.exec(seg))){ const ph=m[1].toLowerCase(); const fw=ph.startsWith('grano saraceno')?'grano':ph.startsWith('farina di grano saraceno')?'farina di grano':ph.split(' ')[0]; prot.push([m.index,m.index+fw.length]); }
     let last=0; RE_ALL.lastIndex=0;
     while((m=RE_ALL.exec(seg))){
       const s=m.index, e=s+m[1].length;
@@ -770,7 +770,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.6';
+const APP_VERSION='0.2.7';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
