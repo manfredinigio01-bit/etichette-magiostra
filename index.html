@@ -211,7 +211,7 @@ function defaultState(){
   };
 }
 const PRESETS = {
-  L7164:{nome:'Avery L7164 – 63,5×72 mm, 12 per foglio (laser)',w:63.5,h:72,cols:3,rows:4,mTop:4.5,mLeft:7.25,gapX:2.5,gapY:0,taglio:false},
+  L7164:{nome:'Markin 210A420 / Avery L7164 / HERMA 4266 – 63,5×72 mm, 12 per foglio',w:63.5,h:72,cols:3,rows:4,mTop:4.5,mLeft:7.25,gapX:2.5,gapY:0,taglio:false},
   A4_66x80:{nome:'Carta normale A4 – 66×80 mm, 9 per foglio, con linee di taglio (a norma per ricette lunghe)',w:66,h:80,cols:3,rows:3,mTop:28.5,mLeft:6,gapX:0,gapY:0,taglio:true},
   A4_60x70:{nome:'Carta normale A4 – 60×70 mm, 12 per foglio, con linee di taglio',w:60,h:70,cols:3,rows:4,mTop:8.5,mLeft:15,gapX:0,gapY:0,taglio:true},
   custom:{nome:'Personalizzato'}
@@ -770,7 +770,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.7';
+const APP_VERSION='0.2.8';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
