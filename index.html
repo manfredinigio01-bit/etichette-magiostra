@@ -223,7 +223,7 @@ localStorage.setItem('mag_data',JSON.stringify(S)); // salva subito eventuali ag
 let DEV = JSON.parse(localStorage.getItem('mag_dev')||'{}');
 DEV = Object.assign({offX:0,offY:0,coda:[],start:0,nome:''},DEV);
 DEV.offX=Number(DEV.offX)||0; DEV.offY=Number(DEV.offY)||0; DEV.start=Math.max(0,parseInt(DEV.start)||0); DEV.nome=String(DEV.nome||'');
-DEV.coda=(Array.isArray(DEV.coda)?DEV.coda:[]).filter(j=>j&&SAFE_ID.test(j.pid)).map(j=>({pid:j.pid,kg:j.kg==null?null:Number(j.kg),prod:String(j.prod||'').replace(/[^0-9-]/g,''),scad:String(j.scad||'').replace(/[^0-9-]/g,''),lotto:String(j.lotto||''),prezzo:String(j.prezzo??''),showPrice:!!j.showPrice,qty:Math.max(1,parseInt(j.qty)||1)}));
+DEV.coda=(Array.isArray(DEV.coda)?DEV.coda:[]).filter(j=>j&&SAFE_ID.test(j.pid)).map(j=>({pid:j.pid,kg:j.kg==null?null:Number(j.kg),prod:String(j.prod||'').replace(/[^0-9-]/g,''),scad:String(j.scad||'').replace(/[^0-9-]/g,''),lotto:String(j.lotto||''),prezzo:String(j.prezzo??''),tipoPrezzo:j.tipoPrezzo==='pezzo'?'pezzo':'kg',showPrice:!!j.showPrice,qty:Math.max(1,parseInt(j.qty)||1)}));
 let TAB='stampa', SEL=null, EDIT=null, Q='';
 let fileHandle=null, lastSync=null, syncTimer=null;
 
@@ -249,7 +249,7 @@ function sanitize(s){
   const keys=ALLERGENI.map(x=>x.k), pzIds=st.pezzature.map(z=>z.id), csIds=st.conservazioni.map(c=>c.id);
   s.prodotti=(Array.isArray(s.prodotti)?s.prodotti:[]).filter(p=>p&&SAFE_ID.test(p.id)).map(p=>({...p,
     nome:String(p.nome??''),sottotitolo:String(p.sottotitolo??''),ingredienti:String(p.ingredienti??''),tracceExtra:String(p.tracceExtra??''),diciture:String(p.diciture??''),
-    prezzoKg:String(p.prezzoKg??''),giorni:Math.round(n(p.giorni,0,0,3650)),tipoData:p.tipoData==='tmc'?'tmc':'scadenza',
+    prezzoKg:String(p.prezzoKg??''),prezzoPezzo:String(p.prezzoPezzo??''),tipoPrezzo:p.tipoPrezzo==='pezzo'?'pezzo':'kg',giorni:Math.round(n(p.giorni,0,0,3650)),tipoData:p.tipoData==='tmc'?'tmc':'scadenza',
     tracce:(Array.isArray(p.tracce)?p.tracce:[]).filter(k=>keys.includes(k)),
     pezzature:(Array.isArray(p.pezzature)?p.pezzature:[]).filter(k=>pzIds.includes(k)),
     conservazione:csIds.includes(p.conservazione)?p.conservazione:'',
@@ -297,6 +297,13 @@ const kgFmt = n => n==null?'':n.toLocaleString('it-IT',{minimumFractionDigits:3,
 const pesoFmt = kg => kg==null?'': (kg<1 ? Math.round(kg*1000)+' g' : kgFmt(kg)+' kg');
 
 /* ================== RENDER ETICHETTA ================== */
+// prezzo: 'kg' = prezzo al chilo (totale = €/kg × peso); 'pezzo' = prezzo fisso a confezione (€/kg calcolato)
+function prezzoCalc(p,kg,tipo){
+  tipo = tipo || p.tipoPrezzo || 'kg';
+  if(tipo==='pezzo'){ const v=num(p.prezzoPezzo); return v==null?'':v.toFixed(2); }
+  const k=num(p.prezzoKg); return (k!=null&&kg!=null)?(Math.round(k*kg*100)/100).toFixed(2):'';
+}
+function prezzoInfo(p){ return (p.tipoPrezzo==='pezzo') ? (num(p.prezzoPezzo)!=null?'€ '+eur(num(p.prezzoPezzo))+'/pz':'') : (num(p.prezzoKg)!=null?'€/kg '+eur(num(p.prezzoKg)):''); }
 function tracceText(p){
   const list=(p.tracce||[]).map(k=>ALLERGENI.find(a=>a.k===k)?.t).filter(Boolean);
   let t = list.length ? 'Può contenere tracce di ' + list.join(', ') + '.' : '';
@@ -323,7 +330,7 @@ function labelHTML(job, opts={}){
   else logo=`<div class="hr"><div class="aznome">${esc(a.nome)}</div>${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   const kg = job.kg;
   const prezzo = job.prezzo!=null && job.prezzo!=='' ? num(job.prezzo) : null;
-  const pkg = num(p.prezzoKg);
+  const pkg = (job.tipoPrezzo||p.tipoPrezzo)==='pezzo' ? (prezzo!=null&&kg ? Math.round(prezzo/kg*100)/100 : null) : num(p.prezzoKg);
   const tr = tracceText(p);
   return `<div class="lbl ${opts.cut?'cut':''}" style="width:${W}mm;height:${H}mm;--m:${minPt}pt"><div class="in" style="padding:${P}mm">
     <div class="hd">${logo}</div>
@@ -437,14 +444,14 @@ function afterRender(){
 }
 function prodJob(p,price){
   const z=getPz((p.pezzature&&p.pezzature[0]))||S.settings.pezzature[0]||{};
-  const pk=num(p.prezzoKg), kg=z.kg??0.25;
-  return {pid:p.id,kg,prod:isoToday(),scad:addDays(isoToday(),p.giorni||0),lotto:lotto(isoToday()),prezzo:pk!=null?(pk*kg).toFixed(2):'9.99',showPrice:price};
+  const kg=z.kg??0.25;
+  return {pid:p.id,kg,prod:isoToday(),scad:addDays(isoToday(),p.giorni||0),lotto:lotto(isoToday()),prezzo:prezzoCalc(p,kg)||'99.99',tipoPrezzo:p.tipoPrezzo,showPrice:price};
 }
 function markNonFit(){
   const tmp=document.getElementById('print'); let n=0;
   document.querySelectorAll('.plist .it[data-id]').forEach(it=>{
     const p=getP(it.dataset.id); if(!p) return;
-    tmp.innerHTML=labelHTML(prodJob(p, num(p.prezzoKg)!=null)); fitLabels(tmp);
+    tmp.innerHTML=labelHTML(prodJob(p, !!prezzoCalc(p,0.25))); fitLabels(tmp);
     if(tmp.querySelector('.lbl.overflow')){ n++; it.querySelector('.nf')?.classList.remove('hidden'); }
   });
   tmp.innerHTML='';
@@ -452,21 +459,20 @@ function markNonFit(){
 }
 
 /* ---------- STAMPA ---------- */
-let FORM = {pid:null,pz:'',kgLibero:'',prod:isoToday(),scad:'',lotto:'',prezzo:'',showPrice:false,qty:1,scadManual:false,lottoManual:false,prezzoManual:false};
+let FORM = {pid:null,tipoPrezzo:'kg',pz:'',kgLibero:'',prod:isoToday(),scad:'',lotto:'',prezzo:'',showPrice:false,qty:1,scadManual:false,lottoManual:false,prezzoManual:false};
 function formJob(){
   const p=getP(FORM.pid); if(!p) return null;
   const kg = FORM.pz==='libero' ? num(FORM.kgLibero) : (getPz(FORM.pz)?.kg ?? null);
   const scad = FORM.scadManual&&FORM.scad ? FORM.scad : addDays(FORM.prod, p.giorni||0);
   const lt = FORM.lottoManual&&FORM.lotto ? FORM.lotto : lotto(FORM.prod);
-  const pkg=num(p.prezzoKg);
-  const prezzo = FORM.prezzoManual ? FORM.prezzo : (pkg!=null&&kg!=null ? (Math.round(pkg*kg*100)/100).toFixed(2) : '');
-  return {pid:p.id,kg,prod:FORM.prod,scad,lotto:lt,prezzo,showPrice:FORM.showPrice,qty:Math.max(1,parseInt(FORM.qty)||1)};
+  const prezzo = FORM.prezzoManual ? FORM.prezzo : prezzoCalc(p,kg,FORM.tipoPrezzo);
+  return {pid:p.id,kg,prod:FORM.prod,scad,lotto:lt,prezzo,tipoPrezzo:FORM.tipoPrezzo,showPrice:FORM.showPrice,qty:Math.max(1,parseInt(FORM.qty)||1)};
 }
 function selectProduct(id){
   const p=getP(id); FORM.pid=id;
   const pzs=(p.pezzature&&p.pezzature.length)?p.pezzature:S.settings.pezzature.map(z=>z.id);
   FORM.pz=pzs[0]||'libero'; FORM.scadManual=false; FORM.lottoManual=false; FORM.prezzoManual=false;
-  FORM.showPrice=!!p.mostraPrezzo && num(p.prezzoKg)!=null; render();
+  FORM.tipoPrezzo=p.tipoPrezzo||'kg'; FORM.showPrice=!!p.mostraPrezzo && !!prezzoCalc(p,0.25); render();
 }
 function viewStampa(){
   const ps=prodotti().filter(p=>!Q||(p.nome+' '+(p.sottotitolo||'')).toLowerCase().includes(Q.toLowerCase()));
@@ -478,7 +484,7 @@ function viewStampa(){
     const cons=getCons(p.conservazione);
     if(cons && /frigorifero/i.test(cons.testo) && p.tipoData==='tmc') warns+=`<div class="warn">Prodotto da frigorifero con "preferibilmente entro": per gli alimenti deperibili serve la data di scadenza "Da consumarsi entro". Correggilo nella scheda prodotto.</div>`;
     if(j && j.kg==null) warns+=`<div class="warn">Manca il peso netto.</div>`;
-    if(FORM.showPrice && !j.prezzo) warns+=`<div class="warn">Prezzo non calcolabile: inserisci il prezzo €/kg nella scheda prodotto o scrivilo qui.</div>`;
+    if(FORM.showPrice && !j.prezzo) warns+=`<div class="warn">Prezzo mancante: inseriscilo nella scheda prodotto (al kg o al pezzo) oppure scrivilo qui.</div>`;
   }
   const pzs = p ? ((p.pezzature&&p.pezzature.length)?p.pezzature.map(getPz).filter(Boolean):S.settings.pezzature) : [];
   return `<div class="grid2">
@@ -502,7 +508,9 @@ function viewStampa(){
       </div>
       <div class="row">
         <label class="chk"><input type="checkbox" ${FORM.showPrice?'checked':''} onchange="FORM.showPrice=this.checked;render()"> Stampa il prezzo</label>
-        ${FORM.showPrice?`<label class="f s">Prezzo €<input value="${esc(j.prezzo)}" onchange="FORM.prezzo=this.value;FORM.prezzoManual=true;render()"></label><span class="muted">${num(p.prezzoKg)!=null?'€/kg '+eur(num(p.prezzoKg)):'nessun €/kg in scheda'}</span>`:''}
+        ${FORM.showPrice?`<label class="f s">Tipo di prezzo<select onchange="FORM.tipoPrezzo=this.value;FORM.prezzoManual=false;render()"><option value="kg" ${FORM.tipoPrezzo!=='pezzo'?'selected':''}>Al kg</option><option value="pezzo" ${FORM.tipoPrezzo==='pezzo'?'selected':''}>Al pezzo</option></select></label>
+          <label class="f s">${FORM.tipoPrezzo==='pezzo'?'Prezzo a pezzo €':'Prezzo totale €'}<input value="${esc(j.prezzo)}" onchange="FORM.prezzo=this.value;FORM.prezzoManual=true;render()"></label>
+          <span class="muted">${FORM.tipoPrezzo==='pezzo' ? (num(j.prezzo)!=null&&j.kg?'= €/kg '+eur(Math.round(num(j.prezzo)/j.kg*100)/100)+' (stampato in etichetta)':'') : (num(p.prezzoKg)!=null?'€/kg '+eur(num(p.prezzoKg))+' × peso':'nessun €/kg in scheda')}</span>`:''}
       </div>
       ${warns}
       <div class="row" style="margin-top:12px">
@@ -549,12 +557,12 @@ function viewProdotti(){
   return `<div class="grid2">
    <div class="card"><div class="flexsp"><h2>Prodotti (${prodotti().length}) <span class="muted" id="nfcount" style="font-weight:400;color:#b3261e"></span></h2><button class="b p sm" onclick="newProduct()">+ Nuovo prodotto</button></div>
     <input placeholder="Cerca per nome o ingrediente…" value="${esc(Q)}" oninput="Q=this.value;render();setTimeout(()=>{const q=document.getElementById('qb2');q.focus();q.setSelectionRange(q.value.length,q.value.length)})" id="qb2" style="width:100%;margin:6px 0 8px">
-    <div class="plist" style="max-height:640px">${ps.map(x=>{const al=highlight(x.ingredienti).found.filter(k=>!k.startsWith('manuale'));return `<div class="it ${EDIT&&EDIT.id===x.id?'on':''}" data-id="${x.id}" onclick="editProduct('${x.id}')"><span><b>${esc(x.nome)}</b> <span class="tag nf hidden" style="background:#fdecea;color:#7a1712">non entra</span> <span class="muted">${esc(x.sottotitolo||'')}</span><br>${al.map(k=>`<span class="tag a">${ALLERGENI.find(a=>a.k===k).n}</span>`).join('')}</span><span class="muted" style="white-space:nowrap">${x.giorni||0} gg${num(x.prezzoKg)!=null?'<br>€/kg '+eur(num(x.prezzoKg)):''}</span></div>`}).join('')||'<div class="it muted">Nessun prodotto</div>'}</div>
+    <div class="plist" style="max-height:640px">${ps.map(x=>{const al=highlight(x.ingredienti).found.filter(k=>!k.startsWith('manuale'));return `<div class="it ${EDIT&&EDIT.id===x.id?'on':''}" data-id="${x.id}" onclick="editProduct('${x.id}')"><span><b>${esc(x.nome)}</b> <span class="tag nf hidden" style="background:#fdecea;color:#7a1712">non entra</span> <span class="muted">${esc(x.sottotitolo||'')}</span><br>${al.map(k=>`<span class="tag a">${ALLERGENI.find(a=>a.k===k).n}</span>`).join('')}</span><span class="muted" style="white-space:nowrap">${x.giorni||0} gg${prezzoInfo(x)?'<br>'+prezzoInfo(x):''}</span></div>`}).join('')||'<div class="it muted">Nessun prodotto</div>'}</div>
    </div>
    <div>${p?editorHTML(p):'<div class="card muted">Seleziona un prodotto a sinistra o creane uno nuovo.</div>'}</div>
   </div>`;
 }
-function newProduct(){ EDIT={id:uid(),nome:'',sottotitolo:'',ingredienti:'',tracce:[],tracceExtra:'',conservazione:S.settings.conservazioni[0]?.id,diciture:'',tipoData:'scadenza',giorni:3,prezzoKg:'',pezzature:[],mostraPrezzo:false,_new:true}; render(); }
+function newProduct(){ EDIT={id:uid(),nome:'',sottotitolo:'',ingredienti:'',tracce:[],tracceExtra:'',conservazione:S.settings.conservazioni[0]?.id,diciture:'',tipoData:'scadenza',giorni:3,prezzoKg:'',prezzoPezzo:'',tipoPrezzo:'kg',pezzature:[],mostraPrezzo:false,_new:true}; render(); }
 function editProduct(id){ EDIT=JSON.parse(JSON.stringify(getP(id))); render(); }
 function ed(k,v,re){ EDIT[k]=v; if(re) render(); else refreshEditorPreview(); }
 function editorHTML(p){
@@ -587,8 +595,12 @@ function editorHTML(p){
     <div class="row"><label class="f">Altre diciture (facoltativo)<input value="${esc(p.diciture)}" placeholder="es. Scaldare prima del consumo" oninput="ed('diciture',this.value)"></label></div>
     <h3>Vendita</h3>
     <div class="row">
-      <label class="f s">Prezzo €/kg<input value="${esc(p.prezzoKg)}" placeholder="18,00" oninput="ed('prezzoKg',this.value)"></label>
+      <label class="f s">Tipo di prezzo<select onchange="ed('tipoPrezzo',this.value,true)"><option value="kg" ${p.tipoPrezzo!=='pezzo'?'selected':''}>Al kg</option><option value="pezzo" ${p.tipoPrezzo==='pezzo'?'selected':''}>Al pezzo</option></select></label>
+      ${p.tipoPrezzo==='pezzo'?`<label class="f s">Prezzo a pezzo €<input value="${esc(p.prezzoPezzo||'')}" placeholder="4,50" oninput="ed('prezzoPezzo',this.value)"></label>`:`<label class="f s">Prezzo €/kg<input value="${esc(p.prezzoKg)}" placeholder="18,00" oninput="ed('prezzoKg',this.value)"></label>`}
       <label class="chk"><input type="checkbox" ${p.mostraPrezzo?'checked':''} onchange="ed('mostraPrezzo',this.checked)"> Prezzo attivo di default in stampa</label>
+    </div>
+    ${p.tipoPrezzo==='pezzo'?`<div class="muted" style="margin-bottom:8px">Con il prezzo al pezzo l'etichetta riporta anche il prezzo al kg, calcolato dal peso netto (obbligatorio per legge).</div>`:''}
+    <div class="row">
     </div>
     <div class="muted" style="margin-bottom:4px">Pezzature disponibili per questo prodotto (nessuna selezionata = tutte):</div>
     <div style="display:flex;flex-wrap:wrap;gap:4px 14px">${S.settings.pezzature.map(z=>`<label class="chk"><input type="checkbox" ${p.pezzature?.includes(z.id)?'checked':''} onchange="togglePz('${z.id}',this.checked)"> ${esc(z.nome)}</label>`).join('')}</div>
@@ -698,7 +710,7 @@ function viewImpostazioni(){
     <h3>Backup e importazione</h3>
     <div class="row"><button class="b" onclick="exportJSON()">Esporta backup (.json)</button><label class="b" style="cursor:pointer">Importa backup<input type="file" accept=".json" class="hidden" onchange="importJSON(this)"></label></div>
     <h3>Importa prodotti da Excel / CSV</h3>
-    <div class="muted">Prima riga con le intestazioni: <code>nome; sottotitolo; ingredienti; giorni; prezzo_kg; conservazione</code> (conservazione: frigo / secco / congelato). Puoi anche copiare le righe da Excel e incollarle qui.</div>
+    <div class="muted">Prima riga con le intestazioni: <code>nome; sottotitolo; ingredienti; giorni; prezzo_kg; conservazione</code> (conservazione: frigo / secco / congelato; per il prezzo a confezione aggiungi la colonna prezzo_pezzo). Puoi anche copiare le righe da Excel e incollarle qui.</div>
     <textarea id="csvbox" placeholder="Incolla qui le righe…" style="width:100%;min-height:80px;margin-top:6px"></textarea>
     <div class="row"><button class="b" onclick="importCSV(document.getElementById('csvbox').value)">Importa righe incollate</button><label class="b" style="cursor:pointer">Importa file CSV<input type="file" accept=".csv,.txt" class="hidden" onchange="this.files[0].text().then(importCSV)"></label></div>
   </div>
@@ -717,14 +729,14 @@ function importCSV(text){
   const hdr=parse(lines[0]).map(h=>h.toLowerCase().replace(/[^a-z_]/g,''));
   const ix = n => hdr.findIndex(h=>h.startsWith(n));
   const iN=ix('nome'); if(iN<0){ alert('Manca la colonna "nome" nella prima riga'); return; }
-  const iS=ix('sottotitolo'), iI=ix('ingredienti'), iG=ix('giorni'), iP=ix('prezzo'), iC=ix('conservazione');
+  const iS=ix('sottotitolo'), iI=ix('ingredienti'), iG=ix('giorni'), iP=hdr.findIndex(h=>h==='prezzo_kg'||h==='prezzokg'||h==='prezzo'), iPP=hdr.findIndex(h=>h.startsWith('prezzo_pezzo')||h.startsWith('prezzopezzo')), iC=ix('conservazione');
   let n=0, upd=0; const t=now();
   lines.slice(1).forEach(l=>{ const c=parse(l); const nome=c[iN]; if(!nome) return;
     const consTxt=(iC>=0?c[iC]:'').toLowerCase();
     const cons = /cong|surg|-18/.test(consTxt)?'cs3':/secc|fresco e asciutto|dispensa/.test(consTxt)?'cs2':'cs1';
     const csObj=getCons(cons)||S.settings.conservazioni[0];
     const ex=prodotti().find(p=>p.nome.toLowerCase()===nome.toLowerCase() && (iS<0||(p.sottotitolo||'').toLowerCase()===(c[iS]||'').toLowerCase()));
-    const data={nome,sottotitolo:iS>=0?c[iS]:'',ingredienti:iI>=0?c[iI]:'',giorni:iG>=0?(parseInt(c[iG])||0):3,prezzoKg:iP>=0?c[iP]:'',conservazione:csObj?.id,tipoData:csObj?.tipoData||'scadenza',updatedAt:t};
+    const data={nome,sottotitolo:iS>=0?c[iS]:'',ingredienti:iI>=0?c[iI]:'',giorni:iG>=0?(parseInt(c[iG])||0):3,prezzoKg:iP>=0?c[iP]:'',prezzoPezzo:iPP>=0?c[iPP]:'',tipoPrezzo:(iPP>=0&&c[iPP]&&!(iP>=0&&c[iP]))?'pezzo':'kg',conservazione:csObj?.id,tipoData:csObj?.tipoData||'scadenza',updatedAt:t};
     if(ex){ Object.assign(ex,data); upd++; } else { S.prodotti.push({id:uid(),tracce:[],tracceExtra:'',diciture:'',pezzature:[],mostraPrezzo:false,...data}); n++; }
   });
   commit(); render(); alert(`Importati ${n} nuovi prodotti, aggiornati ${upd}.`);
@@ -776,7 +788,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.2.9';
+const APP_VERSION='0.3.0';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
