@@ -193,7 +193,7 @@ function defaultState(){
     settings:{
       updatedAt:0, // un avvio da zero non deve mai sovrascrivere le impostazioni dell'archivio condiviso
       azienda:{nome:'La Magiostra', sottotitolo:'CUCINA', ragioneSociale:'La Magiostra di Aquilino e C. snc', indirizzo:'Via Grado 1 – 26100 Cremona (CR)', contatti:'Tel. 0372 21415 – aquilinochiara@libero.it'},
-      logo:'compatto', logoCustom:'', layout024:true, layout029:true, layout031:true,
+      logo:'compatto', logoCustom:'', layout024:true, layout029:true, layout031:true, cons035:true,
       etichetta:{w:63.5,h:72,pad:3,minPt:7,maxPt:8.5,allergeniMaiuscolo:false,etichettaProdotto:'Prodotto il:',mostraContatti:false,mostraProduzione:false,piedeCompatto:true},
       foglio:{preset:'L7164',modo:'a4',pageW:210,pageH:297,cols:3,rows:4,mTop:4.5,mLeft:7.25,gapX:2.5,gapY:0,taglio:false},
       pezzature:[{id:'pz1',nome:'250 g',kg:0.25},{id:'pz2',nome:'300 g',kg:0.3},{id:'pz3',nome:'500 g',kg:0.5},{id:'pz4',nome:'1 kg',kg:1}],
@@ -201,7 +201,8 @@ function defaultState(){
         {id:'cs1',testo:'Conservare in frigorifero a +4 °C.',tipoData:'scadenza'},
         {id:'cs2',testo:'Conservare in luogo fresco e asciutto, lontano da fonti di calore.',tipoData:'tmc'},
         {id:'cs3',testo:'Prodotto congelato. Conservare in congelatore a -18 °C. Una volta scongelato non ricongelare.',tipoData:'tmc'},
-        {id:'cs4',testo:'Conservare in frigorifero a +4 °C. Dopo l\'apertura consumare entro 3 giorni.',tipoData:'scadenza'}
+        {id:'cs4',testo:'Conservare in frigorifero a +4 °C. Dopo l\'apertura consumare entro 3 giorni.',tipoData:'scadenza'},
+        {id:'cs5',testo:'Conservare in luogo fresco e asciutto. Dopo l\'apertura conservare in frigorifero e consumare entro 7 giorni.',tipoData:'tmc'}
       ]
     },
     prodotti:[] // niente prodotto di esempio: creava una copia nell'archivio a ogni avvio da zero
@@ -275,6 +276,10 @@ function normalize(s){
     Object.assign(f,{preset:'L7164',modo:'a4',cols:P.cols,rows:P.rows,mTop:P.mTop,mLeft:P.mLeft,gapX:P.gapX,gapY:P.gapY,taglio:false});
     e.w=P.w; e.h=P.h; e.pad=3;
     st.layout029=true;
+  }
+  if(!st.cons035){ // 18/11/2026: dicitura per composte e conserve (vaso chiuso a temperatura ambiente, frigo dopo l'apertura)
+    if(!st.conservazioni.some(c=>c.id==='cs5')) st.conservazioni.push({id:'cs5',testo:'Conservare in luogo fresco e asciutto. Dopo l\'apertura conservare in frigorifero e consumare entro 7 giorni.',tipoData:'tmc'});
+    st.cons035=true;
   }
   // v0.3.4: elimina le copie mai modificate del vecchio prodotto di esempio (ne resta una sola, la più vecchia)
   const isPasta=p=>!p.deleted && p.nome==='Pasta al forno' && p.sottotitolo==='con ragù di cavolfiore';
@@ -805,7 +810,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.3.4';
+const APP_VERSION='0.3.5';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
