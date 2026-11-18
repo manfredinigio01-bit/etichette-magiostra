@@ -79,10 +79,11 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 .lbl .body{flex:1;min-height:0;overflow:hidden;margin-top:1.2mm}
 .lbl .fit p{margin:0 0 .7mm 0;text-align:left}
 .lbl .fit b.al{font-weight:900}
-.lbl .fit .cons{font-weight:700}
+.lbl .consb{font-weight:700;margin-top:.8mm;line-height:1.15}
 .lbl .ft{border-top:0.25mm solid #000;padding-top:.8mm;margin-top:.6mm}
 .lbl .hc{flex:1;min-width:0;line-height:1.15}
 .lbl .hc .rsc{font-weight:700}
+.lbl .hc .cuc{font-family:Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:.28em;font-size:8.5pt;line-height:1.1;margin-bottom:.3mm}
 .lbl .ft.fc .big{font-weight:700;font-size:var(--m);white-space:nowrap}
 .lbl .ft.fc .r2{display:flex;justify-content:space-between;gap:1mm;align-items:baseline}
 .lbl .ft .sc .big{font-weight:700;font-size:var(--m);white-space:nowrap}
@@ -191,8 +192,8 @@ function defaultState(){
     version:1,
     settings:{
       updatedAt:t,
-      azienda:{nome:'La Magiostra', sottotitolo:'', ragioneSociale:'La Magiostra di Aquilino e C. snc', indirizzo:'Via Grado 1 – 26100 Cremona (CR)', contatti:'Tel. 0372 21415 – aquilinochiara@libero.it'},
-      logo:'compatto', logoCustom:'', layout024:true, layout029:true,
+      azienda:{nome:'La Magiostra', sottotitolo:'CUCINA', ragioneSociale:'La Magiostra di Aquilino e C. snc', indirizzo:'Via Grado 1 – 26100 Cremona (CR)', contatti:'Tel. 0372 21415 – aquilinochiara@libero.it'},
+      logo:'compatto', logoCustom:'', layout024:true, layout029:true, layout031:true,
       etichetta:{w:63.5,h:72,pad:3,minPt:7,maxPt:8.5,allergeniMaiuscolo:false,etichettaProdotto:'Prodotto il:',mostraContatti:false,mostraProduzione:false,piedeCompatto:true},
       foglio:{preset:'L7164',modo:'a4',pageW:210,pageH:297,cols:3,rows:4,mTop:4.5,mLeft:7.25,gapX:2.5,gapY:0,taglio:false},
       pezzature:[{id:'pz1',nome:'250 g',kg:0.25},{id:'pz2',nome:'300 g',kg:0.3},{id:'pz3',nome:'500 g',kg:0.5},{id:'pz4',nome:'1 kg',kg:1}],
@@ -267,6 +268,10 @@ function normalize(s){
     st.logo='compatto'; a.sottotitolo=''; Object.assign(st.etichetta,{mostraContatti:false,mostraProduzione:false,piedeCompatto:true});
     st.layout024=true; st.updatedAt=Date.now();
   }
+  if(!st.layout031){ // 18/11/2026: torna la sigla CUCINA nell'intestazione compatta
+    if(!a.sottotitolo) a.sottotitolo='CUCINA';
+    st.layout031=true; st.updatedAt=Date.now();
+  }
   if(!st.layout029){ // 18/11/2026: fogli Markin 210A420 63,5x72, niente linee tratteggiate
     const P=PRESETS.L7164, f=st.foglio, e=st.etichetta;
     Object.assign(f,{preset:'L7164',modo:'a4',cols:P.cols,rows:P.rows,mTop:P.mTop,mLeft:P.mLeft,gapX:P.gapX,gapY:P.gapY,taglio:false});
@@ -325,7 +330,7 @@ function labelHTML(job, opts={}){
   if(lg==='sole+scritta') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${soleH}mm"><div class="hr"><img class="scritta" src="${LOGO_SCRITTA}" style="max-height:${soleH*0.78}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else if(lg==='scritta') logo=`<div class="hr"><img class="scritta" src="${LOGO_SCRITTA}" style="max-height:${soleH*0.85}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else if(lg==='sole') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${soleH}mm"><div class="hr"><div class="aznome">${esc(a.nome)}</div>${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
-  else if(lg==='compatto') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${Math.min(9.5,H*0.13)}mm"><div class="hc" style="font-size:${minPt}pt"><div class="rsc">${esc(a.ragioneSociale||a.nome)}</div><div>${esc(a.indirizzo)}</div>${e.mostraContatti&&a.contatti?`<div>${esc(a.contatti)}</div>`:''}</div>`;
+  else if(lg==='compatto') logo=`<img class="sole" src="${LOGO_SOLE}" style="height:${Math.min(11.5,H*0.16)}mm"><div class="hc" style="font-size:${minPt}pt">${a.sottotitolo?`<div class="cuc">${esc(a.sottotitolo)}</div>`:''}<div class="rsc">${esc(a.ragioneSociale||a.nome)}</div><div>${esc(a.indirizzo)}</div>${e.mostraContatti&&a.contatti?`<div>${esc(a.contatti)}</div>`:''}</div>`;
   else if(lg==='custom' && st.logoCustom) logo=`<div class="hr"><img class="scritta" src="${st.logoCustom}" style="max-height:${soleH}mm">${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   else logo=`<div class="hr"><div class="aznome">${esc(a.nome)}</div>${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   const kg = job.kg;
@@ -342,9 +347,9 @@ function labelHTML(job, opts={}){
     <div class="body"><div class="fit">
       <p class="ing"><b>Ingredienti:</b> ${hl.html}</p>
       ${tr?`<p class="tr">${esc(tr)}</p>`:''}
-      ${cons?`<p class="cons">${esc(cons.testo)}</p>`:''}
       ${p.diciture?`<p>${esc(p.diciture)}</p>`:''}
     </div></div>
+    ${cons?`<div class="consb" style="font-size:${minPt}pt">${esc(cons.testo)}</div>`:''}
     ${e.piedeCompatto ? `<div class="ft fc" style="font-size:${minPt}pt">
       <div>${scadLbl} <b class="big">${fmtD(job.scad)}</b></div>
       <div class="r2"><span>Lotto: <b>${esc(job.lotto)}</b>${e.mostraProduzione!==false?` · ${esc(e.etichettaProdotto.replace(/:$/,''))} ${fmtD(job.prod)}`:''}</span><span>Peso netto <b class="big">${kg!=null?kgFmt(kg)+' kg':'—'}</b></span></div>
@@ -788,7 +793,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.3.1';
+const APP_VERSION='0.3.3';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
