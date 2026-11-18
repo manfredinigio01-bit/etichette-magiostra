@@ -34,7 +34,7 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - Formati: oggi 60×70 (circa 510 caratteri di ingredienti con prezzo); preset A4 66×80 (circa 740).
 
 - Fogli: Markin 210A420 63,5×72, 12/foglio (preset `L7164`), niente linee di taglio, margine interno 3 mm (migrazione `layout029`).
-- Prezzo (v0.3.0): `tipoPrezzo` 'kg' (prezzoKg × peso) o 'pezzo' (prezzoPezzo fisso; in etichetta €/kg calcolato = prezzo/peso). Scelta anche in stampa (FORM.tipoPrezzo).
+- Prezzo (v0.3.0): `tipoPrezzo` 'kg' (prezzoKg) o 'pezzo' (prezzoPezzo fisso). Decisione Giovanni 18/11: in etichetta SOLO il prezzo scelto (al kg = €/kg, al pezzo = € confezione), nessun totale né €/kg aggiuntivo. Scelta anche in stampa (FORM.tipoPrezzo).
 
 ## Sicurezza (v0.2.6)
 - CSP: `connect-src 'self'`, nessuna risorsa esterna. Non aggiungere CDN, analytics o font esterni.

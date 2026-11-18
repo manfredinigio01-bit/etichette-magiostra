@@ -301,7 +301,7 @@ const pesoFmt = kg => kg==null?'': (kg<1 ? Math.round(kg*1000)+' g' : kgFmt(kg)+
 function prezzoCalc(p,kg,tipo){
   tipo = tipo || p.tipoPrezzo || 'kg';
   if(tipo==='pezzo'){ const v=num(p.prezzoPezzo); return v==null?'':v.toFixed(2); }
-  const k=num(p.prezzoKg); return (k!=null&&kg!=null)?(Math.round(k*kg*100)/100).toFixed(2):'';
+  const k=num(p.prezzoKg); return k!=null?k.toFixed(2):'';
 }
 function prezzoInfo(p){ return (p.tipoPrezzo==='pezzo') ? (num(p.prezzoPezzo)!=null?'€ '+eur(num(p.prezzoPezzo))+'/pz':'') : (num(p.prezzoKg)!=null?'€/kg '+eur(num(p.prezzoKg)):''); }
 function tracceText(p){
@@ -330,7 +330,7 @@ function labelHTML(job, opts={}){
   else logo=`<div class="hr"><div class="aznome">${esc(a.nome)}</div>${a.sottotitolo?`<div class="azsub">${esc(a.sottotitolo)}</div>`:''}</div>`;
   const kg = job.kg;
   const prezzo = job.prezzo!=null && job.prezzo!=='' ? num(job.prezzo) : null;
-  const pkg = (job.tipoPrezzo||p.tipoPrezzo)==='pezzo' ? (prezzo!=null&&kg ? Math.round(prezzo/kg*100)/100 : null) : num(p.prezzoKg);
+  const tipoP = (job.tipoPrezzo||p.tipoPrezzo)==='pezzo' ? 'pezzo' : 'kg'; // in etichetta solo il prezzo scelto
   const tr = tracceText(p);
   return `<div class="lbl ${opts.cut?'cut':''}" style="width:${W}mm;height:${H}mm;--m:${minPt}pt"><div class="in" style="padding:${P}mm">
     <div class="hd">${logo}</div>
@@ -348,13 +348,13 @@ function labelHTML(job, opts={}){
     ${e.piedeCompatto ? `<div class="ft fc" style="font-size:${minPt}pt">
       <div>${scadLbl} <b class="big">${fmtD(job.scad)}</b></div>
       <div class="r2"><span>Lotto: <b>${esc(job.lotto)}</b>${e.mostraProduzione!==false?` · ${esc(e.etichettaProdotto.replace(/:$/,''))} ${fmtD(job.prod)}`:''}</span><span>Peso netto <b class="big">${kg!=null?kgFmt(kg)+' kg':'—'}</b></span></div>
-      ${job.showPrice && prezzo!=null ? `<div class="r2"><span>${pkg!=null?'€/kg '+eur(pkg):''}</span><span>Prezzo <b class="big">€ ${eur(prezzo)}</b></span></div>`:''}
+      ${job.showPrice && prezzo!=null ? `<div class="r2"><span></span><span>${tipoP==='pezzo'?'Prezzo':'Prezzo al kg'} <b class="big">€ ${eur(prezzo)}</b></span></div>`:''}
     </div>` : `<div class="ft" style="font-size:${minPt}pt">
       <div class="sc">${scadLbl} <b class="big">${fmtD(job.scad)}</b></div>
       <div class="ftr">
         <div class="dl">${e.mostraProduzione!==false?`<div>${esc(e.etichettaProdotto)} ${fmtD(job.prod)}</div>`:''}<div>Lotto: <b>${esc(job.lotto)}</b></div></div>
         <div class="box"><span class="k">Peso netto</span> <span class="v">${kg!=null?kgFmt(kg)+' kg':'—'}</span>
-        ${job.showPrice && prezzo!=null ? `<div class="pr">${pkg!=null?`<span class="k">€/kg ${eur(pkg)}</span> · `:''}<span class="k">Prezzo</span> <span class="v">€ ${eur(prezzo)}</span></div>`:''}</div>
+        ${job.showPrice && prezzo!=null ? `<div class="pr"><span class="k">${tipoP==='pezzo'?'Prezzo':'Prezzo al kg'}</span> <span class="v">€ ${eur(prezzo)}</span></div>`:''}</div>
       </div>
     </div>`}
   </div></div>`;
@@ -509,8 +509,8 @@ function viewStampa(){
       <div class="row">
         <label class="chk"><input type="checkbox" ${FORM.showPrice?'checked':''} onchange="FORM.showPrice=this.checked;render()"> Stampa il prezzo</label>
         ${FORM.showPrice?`<label class="f s">Tipo di prezzo<select onchange="FORM.tipoPrezzo=this.value;FORM.prezzoManual=false;render()"><option value="kg" ${FORM.tipoPrezzo!=='pezzo'?'selected':''}>Al kg</option><option value="pezzo" ${FORM.tipoPrezzo==='pezzo'?'selected':''}>Al pezzo</option></select></label>
-          <label class="f s">${FORM.tipoPrezzo==='pezzo'?'Prezzo a pezzo €':'Prezzo totale €'}<input value="${esc(j.prezzo)}" onchange="FORM.prezzo=this.value;FORM.prezzoManual=true;render()"></label>
-          <span class="muted">${FORM.tipoPrezzo==='pezzo' ? (num(j.prezzo)!=null&&j.kg?'= €/kg '+eur(Math.round(num(j.prezzo)/j.kg*100)/100)+' (stampato in etichetta)':'') : (num(p.prezzoKg)!=null?'€/kg '+eur(num(p.prezzoKg))+' × peso':'nessun €/kg in scheda')}</span>`:''}
+          <label class="f s">${FORM.tipoPrezzo==='pezzo'?'Prezzo a pezzo €':'Prezzo al kg €'}<input value="${esc(j.prezzo)}" onchange="FORM.prezzo=this.value;FORM.prezzoManual=true;render()"></label>
+          <span class="muted">${FORM.tipoPrezzo==='pezzo' ? (num(j.prezzo)!=null&&j.kg?'(al kg sarebbe € '+eur(Math.round(num(j.prezzo)/j.kg*100)/100)+': mettilo sul cartellino)':'') : ''}</span>`:''}
       </div>
       ${warns}
       <div class="row" style="margin-top:12px">
@@ -599,7 +599,7 @@ function editorHTML(p){
       ${p.tipoPrezzo==='pezzo'?`<label class="f s">Prezzo a pezzo €<input value="${esc(p.prezzoPezzo||'')}" placeholder="4,50" oninput="ed('prezzoPezzo',this.value)"></label>`:`<label class="f s">Prezzo €/kg<input value="${esc(p.prezzoKg)}" placeholder="18,00" oninput="ed('prezzoKg',this.value)"></label>`}
       <label class="chk"><input type="checkbox" ${p.mostraPrezzo?'checked':''} onchange="ed('mostraPrezzo',this.checked)"> Prezzo attivo di default in stampa</label>
     </div>
-    ${p.tipoPrezzo==='pezzo'?`<div class="muted" style="margin-bottom:8px">Con il prezzo al pezzo l'etichetta riporta anche il prezzo al kg, calcolato dal peso netto (obbligatorio per legge).</div>`:''}
+    ${p.tipoPrezzo==='pezzo'?`<div class="muted" style="margin-bottom:8px">In etichetta compare solo il prezzo scelto. Il prezzo al kg va comunque indicato al cliente, per esempio sul cartellino del banco.</div>`:''}
     <div class="row">
     </div>
     <div class="muted" style="margin-bottom:4px">Pezzature disponibili per questo prodotto (nessuna selezionata = tutte):</div>
@@ -788,7 +788,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.3.0';
+const APP_VERSION='0.3.1';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
