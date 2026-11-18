@@ -18,6 +18,8 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - Unione: per prodotto vince `updatedAt` più recente; le impostazioni vincono in blocco per `settings.updatedAt`. Eliminazioni = `deleted:true`.
 - `DEV` (calibrazione stampante offX/offY, coda di stampa, posizione di partenza) è locale alla postazione.
 - Mantenere sempre la compatibilità con i dati esistenti (aggiungere campi con default, non rinominare).
+- **v0.3.4 (18/11/2026), correzione importante:** `SAFE_ID`, `LOGHI` e `IMG_OK` erano dichiarate dopo `let S = load()`; `sanitize()` andava in errore e `load()` ripartiva da zero a ogni apertura (dal v0.2.6): dati locali persi, una copia nuova del prodotto di esempio nell'archivio e impostazioni condivise sovrascritte dai valori predefiniti. Ora: costanti prima di `load()`, `defaultState()` senza prodotto di esempio e con `settings.updatedAt:0` (un avvio da zero non vince mai sull'archivio), le migrazioni `layoutXXX` non cambiano più `settings.updatedAt` (`normalize` gira anche dopo ogni unione), pulizia automatica delle copie mai modificate dell'esempio "Pasta al forno con ragù di cavolfiore" (ne resta una). Se i dati locali non si leggono, `load()` li conserva in `mag_data_errore_<data>` invece di perderli.
+- Ogni costante usata da `load()`/`normalize()`/`sanitize()` va dichiarata PRIMA di `let S = load()`.
 
 ## Regole di etichettatura implementate (Reg. UE 1169/2011)
 - Allergeni in grassetto automatico (dizionario `ALLERGENI` + `ESCLUSIONI` es. "noce moscata", "latte di cocco"); `*parola*` = grassetto forzato.
