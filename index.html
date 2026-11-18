@@ -304,6 +304,8 @@ function touchSettings(){ S.settings.updatedAt=now(); commit(); }
 function commit(){ saveLocal(); clearTimeout(syncTimer); syncTimer=setTimeout(syncNow,600); }
 const prodotti = () => S.prodotti.filter(p=>!p.deleted).sort((a,b)=>a.nome.localeCompare(b.nome,'it'));
 const getP = id => S.prodotti.find(p=>p.id===id);
+// v0.3.6: è "da frigorifero" solo se lo è già da chiuso; "dopo l'apertura conservare in frigorifero" non conta (composte, conserve)
+const isFrigo = t => /frigorifero|\+\s?4\s?°/i.test(String(t||'').split(/dopo l['’]apertura/i)[0]);
 const getCons = id => S.settings.conservazioni.find(c=>c.id===id);
 const getPz = id => S.settings.pezzature.find(z=>z.id===id);
 
@@ -504,7 +506,7 @@ function viewStampa(){
   let warns='';
   if(p){
     const cons=getCons(p.conservazione);
-    if(cons && /frigorifero/i.test(cons.testo) && p.tipoData==='tmc') warns+=`<div class="warn">Prodotto da frigorifero con "preferibilmente entro": per gli alimenti deperibili serve la data di scadenza "Da consumarsi entro". Correggilo nella scheda prodotto.</div>`;
+    if(cons && isFrigo(cons.testo) && p.tipoData==='tmc') warns+=`<div class="warn">Prodotto da frigorifero con "preferibilmente entro": per gli alimenti deperibili serve la data di scadenza "Da consumarsi entro". Correggilo nella scheda prodotto.</div>`;
     if(j && j.kg==null) warns+=`<div class="warn">Manca il peso netto.</div>`;
     if(FORM.showPrice && !j.prezzo) warns+=`<div class="warn">Prezzo mancante: inseriscilo nella scheda prodotto (al kg o al pezzo) oppure scrivilo qui.</div>`;
   }
@@ -613,7 +615,7 @@ function editorHTML(p){
       <label class="f">Tipo di data<select onchange="ed('tipoData',this.value,true)"><option value="scadenza" ${p.tipoData!=='tmc'?'selected':''}>Da consumarsi entro (scadenza)</option><option value="tmc" ${p.tipoData==='tmc'?'selected':''}>Da consumarsi preferibilmente entro (TMC)</option></select></label>
       <label class="f s">Giorni di durata<input type="number" min="0" value="${p.giorni}" oninput="ed('giorni',parseInt(this.value)||0)"></label>
     </div>
-    ${cons&&/frigorifero/i.test(cons.testo)&&p.tipoData==='tmc'?`<div class="warn">Prodotto refrigerato deperibile: di norma serve "Da consumarsi entro", non "preferibilmente".</div>`:''}
+    ${cons&&isFrigo(cons.testo)&&p.tipoData==='tmc'?`<div class="warn">Prodotto refrigerato deperibile: di norma serve "Da consumarsi entro", non "preferibilmente".</div>`:''}
     <div class="row"><label class="f">Altre diciture (facoltativo)<input value="${esc(p.diciture)}" placeholder="es. Scaldare prima del consumo" oninput="ed('diciture',this.value)"></label></div>
     <h3>Vendita</h3>
     <div class="row">
@@ -810,7 +812,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.3.5';
+const APP_VERSION='0.3.6';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
