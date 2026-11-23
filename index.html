@@ -76,6 +76,14 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 .lbl.fr .fd{font-family:MagSer;line-height:1.15;margin-top:1.2mm;color:#333}
 .lbl.fr .wm{position:absolute;right:-9mm;bottom:8mm;width:40mm;opacity:.09;z-index:0}
 .lbl.fr .band{position:relative;z-index:1;color:#fff;border-radius:1.2mm;padding:1.6mm 2.6mm;display:flex;justify-content:space-between;align-items:center;font-family:MagOsw}
+.lbl.frb .fi{flex-direction:row;gap:2.6mm}
+.lbl.frb .side{width:16mm;flex:0 0 16mm;border-radius:1.2mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:2.6mm 0}
+.lbl.frb .sunw{width:12.5mm;filter:invert(1)}
+.lbl.frb .catv{color:#fff;font-family:MagOsw;font-weight:700;letter-spacing:.22em;font-size:7.5pt;writing-mode:vertical-rl;transform:rotate(180deg)}
+.lbl.frb .mainb{flex:1;min-width:0;display:flex;flex-direction:column}
+.lbl.frb .brandb{font-family:MagOsw;font-weight:500;letter-spacing:.22em;text-transform:uppercase;font-size:5.5pt;margin-top:.6mm}
+.lbl.frb .nmbox{margin-top:2.4mm;display:flex;flex-direction:column;justify-content:center}
+.lbl.frb .pesob{font-family:MagOsw;font-weight:500;font-size:9pt;margin-top:1.5mm}
 .lbl.fr .band .ct{font-weight:700;letter-spacing:.22em;font-size:7.5pt} .lbl.fr .band .pw{font-weight:500;font-size:8.5pt}
 /* retro linea di punta */
 .lbl.pt .hc .cuc{font-family:MagOsw;letter-spacing:.24em;color:var(--c)}
@@ -260,6 +268,7 @@ function sanitize(s){
   st.categorie=(Array.isArray(st.categorie)?st.categorie:CAT_DEF.map(c=>({...c}))).filter(c=>c&&SAFE_ID.test(c.id)).map(c=>({id:c.id,nome:String(c.nome??''),colore:/^#[0-9a-fA-F]{6}$/.test(c.colore)?c.colore:'#5E7F45'}));
   st.conservazioni=(Array.isArray(st.conservazioni)?st.conservazioni:[]).filter(c=>c&&SAFE_ID.test(c.id)).map(c=>({id:c.id,testo:String(c.testo??''),tipoData:c.tipoData==='tmc'?'tmc':'scadenza'}));
   if(!LOGHI.includes(st.logo)) st.logo='compatto';
+  st.stileFronte = st.stileFronte==='b'?'b':'a';
   if(st.logoCustom && !IMG_OK.test(st.logoCustom)) st.logoCustom='';
   const e=st.etichetta=st.etichetta||{};
   e.w=n(e.w,60,15,300); e.h=n(e.h,70,15,300); e.pad=n(e.pad,2.5,0,20); e.minPt=n(e.minPt,7,7,20); e.maxPt=n(e.maxPt,8.5,7,20);
@@ -362,6 +371,24 @@ const isPunta = j => (getP(j.pid)||{}).linea==='punta';
 const pesoBreve = kg => kg==null?'': (kg<1 ? Math.round(kg*1000)+' g' : String(kg).replace('.',',')+' kg');
 // FRONTE linea di punta: nome grande nel colore della categoria + peso netto (stesso campo visivo, art. 13 Reg. 1169/2011)
 function frontHTML(job){
+  if((S.settings.stileFronte||'a')==='b') return frontHTML_B(job);
+  return frontHTML_A(job);
+}
+// Stile B: fascia colorata verticale a sinistra con sole bianco e categoria, nome a destra
+function frontHTML_B(job){
+  const st=S.settings, e=st.etichetta, p=getP(job.pid)||{}, c=getCat(p.categoria), P=e.pad, W=e.w, H=e.h;
+  return `<div class="lbl fr frb" style="width:${W}mm;height:${H}mm"><div class="fi" style="inset:${P}mm">
+    <div class="side" style="background:${c.colore}"><img src="${LOGO_SOLE}" class="sunw"><div class="catv">${esc((c.nome||'').toUpperCase())}</div></div>
+    <div class="mainb">
+      <div class="brandb">${esc(st.azienda.nome||'La Magiostra')} · ${esc(st.azienda.sottotitolo||'Cucina')}</div>
+      <div class="nmbox"><div class="nm" style="color:${c.colore}">${esc(p.nome||'Prodotto')}</div>
+        ${p.sottotitolo?`<div class="ds">${esc(p.sottotitolo)}</div>`:''}
+        ${p.fraseFronte?`<div class="fd">${esc(p.fraseFronte)}</div>`:''}</div>
+      <div class="pesob">Peso netto ${job.kg!=null?pesoBreve(job.kg):''}</div>
+    </div>
+  </div></div>`;
+}
+function frontHTML_A(job){
   const st=S.settings, e=st.etichetta, p=getP(job.pid)||{}, c=getCat(p.categoria), P=e.pad, W=e.w, H=e.h;
   const sunH=Math.min(11,H*0.15);
   return `<div class="lbl fr" style="width:${W}mm;height:${H}mm"><div class="fi" style="inset:${P}mm">
@@ -376,12 +403,12 @@ function frontHTML(job){
 function fitFronts(root){
   root.querySelectorAll('.lbl.fr').forEach(l=>{
     const box=l.querySelector('.nmbox'), nm=l.querySelector('.nm'), ds=l.querySelector('.ds'), fd=l.querySelector('.fd');
-    let n=28, d=11;
+    const B=l.classList.contains('frb'); let n=B?22:28, d=B?9.5:11;
     const set=()=>{ nm.style.fontSize=n+'pt'; if(ds) ds.style.fontSize=d+'pt'; if(fd) fd.style.fontSize=Math.max(7,d-2.5)+'pt'; };
     set();
     // il nome non deve andare a capo a metà parola
     const tooWide=()=>nm.scrollWidth>nm.clientWidth+0.5;
-    while((box.scrollHeight>box.clientHeight+0.5 || tooWide()) && n>12){ n-=0.5; if(d>8.5) d-=0.1; set(); }
+    while((box.scrollHeight>box.clientHeight+0.5 || tooWide()) && n>10){ n-=0.5; if(d>8) d-=0.1; set(); }
     l.classList.toggle('overflow', box.scrollHeight>box.clientHeight+0.5);
   });
 }
@@ -786,6 +813,7 @@ function viewImpostazioni(){
     <button class="b sm" style="margin-top:8px" onclick="S.settings.pezzature.push({id:uid(),nome:'Nuova',kg:0.1});touchSettings();render()">+ Aggiungi pezzatura</button>
   </div>
   <div class="card"><h2>Categorie della linea di punta</h2>
+    <div class="row"><label class="f">Stile del fronte<select onchange="setS('stileFronte',this.value)"><option value="a" ${(st.stileFronte||'a')==='a'?'selected':''}>A · nome grande con fascia colorata in basso</option><option value="b" ${st.stileFronte==='b'?'selected':''}>B · fascia colorata verticale a sinistra</option></select></label></div>
     <table class="q">${st.categorie.map((c,i)=>`<tr><td><input value="${esc(c.nome)}" onchange="S.settings.categorie[${i}].nome=this.value;touchSettings();render()"></td><td><input type="color" value="${c.colore}" onchange="S.settings.categorie[${i}].colore=this.value;touchSettings();render()" style="width:48px;padding:2px;height:32px"></td><td><span class="tag" style="background:${c.colore};color:#fff">${esc(c.nome)}</span></td><td><button class="b sm d" onclick="if(confirm('Eliminare la categoria?')){S.settings.categorie.splice(${i},1);touchSettings();render()}">✕</button></td></tr>`).join('')}</table>
     <button class="b sm" style="margin-top:8px" onclick="S.settings.categorie.push({id:uid(),nome:'Nuova categoria',colore:'#2E3F5C'});touchSettings();render()">+ Aggiungi categoria</button>
     <div class="muted" style="margin-top:6px">Il colore compare sul fronte (nome e fascia) e sui dettagli del retro. Stampato a laser il colore sarà diverso da quello a schermo: fai una prova.</div>
@@ -881,7 +909,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.4.0';
+const APP_VERSION='0.4.1';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
