@@ -268,7 +268,7 @@ function sanitize(s){
   st.categorie=(Array.isArray(st.categorie)?st.categorie:CAT_DEF.map(c=>({...c}))).filter(c=>c&&SAFE_ID.test(c.id)).map(c=>({id:c.id,nome:String(c.nome??''),colore:/^#[0-9a-fA-F]{6}$/.test(c.colore)?c.colore:'#5E7F45'}));
   st.conservazioni=(Array.isArray(st.conservazioni)?st.conservazioni:[]).filter(c=>c&&SAFE_ID.test(c.id)).map(c=>({id:c.id,testo:String(c.testo??''),tipoData:c.tipoData==='tmc'?'tmc':'scadenza'}));
   if(!LOGHI.includes(st.logo)) st.logo='compatto';
-  st.stileFronte = st.stileFronte==='b'?'b':'a';
+  st.stileFronte = 'a'; // decisione Giovanni 23/11/2026: si resta sullo stile A (lo stile B resta nel codice, non selezionabile)
   if(st.logoCustom && !IMG_OK.test(st.logoCustom)) st.logoCustom='';
   const e=st.etichetta=st.etichetta||{};
   e.w=n(e.w,60,15,300); e.h=n(e.h,70,15,300); e.pad=n(e.pad,2.5,0,20); e.minPt=n(e.minPt,7,7,20); e.maxPt=n(e.maxPt,8.5,7,20);
@@ -813,7 +813,7 @@ function viewImpostazioni(){
     <button class="b sm" style="margin-top:8px" onclick="S.settings.pezzature.push({id:uid(),nome:'Nuova',kg:0.1});touchSettings();render()">+ Aggiungi pezzatura</button>
   </div>
   <div class="card"><h2>Categorie della linea di punta</h2>
-    <div class="row"><label class="f">Stile del fronte<select onchange="setS('stileFronte',this.value)"><option value="a" ${(st.stileFronte||'a')==='a'?'selected':''}>A · nome grande con fascia colorata in basso</option><option value="b" ${st.stileFronte==='b'?'selected':''}>B · fascia colorata verticale a sinistra</option></select></label></div>
+
     <table class="q">${st.categorie.map((c,i)=>`<tr><td><input value="${esc(c.nome)}" onchange="S.settings.categorie[${i}].nome=this.value;touchSettings();render()"></td><td><input type="color" value="${c.colore}" onchange="S.settings.categorie[${i}].colore=this.value;touchSettings();render()" style="width:48px;padding:2px;height:32px"></td><td><span class="tag" style="background:${c.colore};color:#fff">${esc(c.nome)}</span></td><td><button class="b sm d" onclick="if(confirm('Eliminare la categoria?')){S.settings.categorie.splice(${i},1);touchSettings();render()}">✕</button></td></tr>`).join('')}</table>
     <button class="b sm" style="margin-top:8px" onclick="S.settings.categorie.push({id:uid(),nome:'Nuova categoria',colore:'#2E3F5C'});touchSettings();render()">+ Aggiungi categoria</button>
     <div class="muted" style="margin-top:6px">Il colore compare sul fronte (nome e fascia) e sui dettagli del retro. Stampato a laser il colore sarà diverso da quello a schermo: fai una prova.</div>
@@ -909,7 +909,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.4.1';
+const APP_VERSION='0.4.2';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
