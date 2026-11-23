@@ -126,11 +126,12 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 
 /* ===== AREA DI STAMPA ===== */
 #print{position:absolute;left:-30000px;top:0}
+#print,#print *{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
 .sheet{position:relative;overflow:hidden;background:#fff;page-break-after:always;break-after:page}
 .sheet:last-child{page-break-after:auto;break-after:auto}
 .sheet .slot{position:absolute}
 @media print{
-  body{background:#fff}
+  html,body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body>*:not(#print){display:none!important}
   #print{position:static;left:auto}
   .lbl.toosmall::after,.lbl.overflow::after{display:none}
@@ -909,7 +910,7 @@ async function syncNow(force){
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.4.2';
+const APP_VERSION='0.4.3';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
