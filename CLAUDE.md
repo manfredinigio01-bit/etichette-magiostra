@@ -40,6 +40,8 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - Fogli: Markin 210A420 63,5×72, 12/foglio (preset `L7164`), niente linee di taglio, margine interno 3 mm (migrazione `layout029`).
 - Prezzo (v0.3.0): `tipoPrezzo` 'kg' (prezzoKg) o 'pezzo' (prezzoPezzo fisso). Decisione Giovanni 18/11: in etichetta SOLO il prezzo scelto (al kg = €/kg, al pezzo = € confezione), nessun totale né €/kg aggiuntivo. Scelta anche in stampa (FORM.tipoPrezzo).
 
+- Linea di punta (v0.4.0): prodotto `linea:'punta'` + `categoria` (settings.categorie: id, nome, colore) + `fraseFronte`. In stampa ogni confezione = 2 etichette 63,5×72: `frontHTML` (nome grande Oswald nel colore categoria, sottotitolo DM Serif, fascia colore con categoria e peso netto) + retro `labelHTML` con classe `pt` (accenti colore). Font Oswald/DM Serif Display incorporati base64 (OFL), CSP `font-src 'self' data:`. Palette colori definitive: in attesa da Giovanni.
+
 ## Sicurezza (v0.2.6)
 - CSP: `connect-src 'self'`, nessuna risorsa esterna. Non aggiungere CDN, analytics o font esterni.
 - `sanitize()` ripulisce ogni dato caricato (archivio condiviso, backup, localStorage): id solo `[A-Za-z0-9_-]`, numeri limitati, logo solo data:image png/jpeg/webp. Ogni campo nuovo va aggiunto lì.
