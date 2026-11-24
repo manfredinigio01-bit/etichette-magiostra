@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Etichette La Magiostra</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'self'">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#5f7a50">
@@ -333,7 +333,7 @@ function load(){
 }
 function saveLocal(){ localStorage.setItem('mag_data',JSON.stringify(S)); }
 function saveDev(){ localStorage.setItem('mag_dev',JSON.stringify(DEV)); }
-function touchSettings(){ S.settings.updatedAt=now(); commit(); }
+function touchSettings(){ S.settings.updatedAt=Math.max(now(),(S.settings.updatedAt||0)+1); commit(); }
 function commit(){ saveLocal(); clearTimeout(syncTimer); syncTimer=setTimeout(syncNow,600); }
 const prodotti = () => S.prodotti.filter(p=>!p.deleted).sort((a,b)=>a.nome.localeCompare(b.nome,'it'));
 const getP = id => S.prodotti.find(p=>p.id===id);
@@ -741,12 +741,12 @@ function togglePz(k,on){ EDIT.pezzature=(EDIT.pezzature||[]).filter(x=>x!==k); i
 function setCons(id){ EDIT.conservazione=id; const c=getCons(id); if(c) EDIT.tipoData=c.tipoData; render(); }
 function saveProduct(){
   if(!EDIT.nome.trim()){ alert('Inserisci il nome del prodotto'); return; }
-  const p={...EDIT}; delete p._new; p.updatedAt=now(); p.updatedBy=DEV.nome||'postazione senza nome';
+  const p={...EDIT}; delete p._new; p.updatedAt=Math.max(now(),(getP(p.id)?.updatedAt||0)+1); // sempre più recente della versione modificata, anche se l'orologio del PC è indietro p.updatedBy=DEV.nome||'postazione senza nome';
   const i=S.prodotti.findIndex(x=>x.id===p.id); if(i>=0) S.prodotti[i]=p; else S.prodotti.push(p);
   EDIT=JSON.parse(JSON.stringify(p)); commit(); render();
 }
 function dupProduct(){ EDIT={...JSON.parse(JSON.stringify(EDIT)),id:uid(),nome:EDIT.nome+' (copia)',_new:true}; render(); }
-function delProduct(){ if(!confirm('Eliminare "'+EDIT.nome+'"?')) return; const p=getP(EDIT.id); if(p){p.deleted=true;p.updatedAt=now();p.updatedBy=DEV.nome||'postazione senza nome';} EDIT=null; commit(); render(); }
+function delProduct(){ if(!confirm('Eliminare "'+EDIT.nome+'"?')) return; const p=getP(EDIT.id); if(p){p.deleted=true;p.updatedAt=Math.max(now(),(p.updatedAt||0)+1);p.updatedBy=DEV.nome||'postazione senza nome';} EDIT=null; commit(); render(); }
 
 /* ---------- IMPOSTAZIONI ---------- */
 function setS(path,v,re=true){ const ks=path.split('.'); let o=S.settings; while(ks.length>1) o=o[ks.shift()]; o[ks[0]]=v; touchSettings(); if(re) render(); }
@@ -824,11 +824,16 @@ function viewImpostazioni(){
     <button class="b sm" style="margin-top:8px" onclick="S.settings.conservazioni.push({id:uid(),testo:'Nuova dicitura',tipoData:'scadenza'});touchSettings();render()">+ Aggiungi dicitura</button>
     <div class="muted" style="margin-top:6px">Il tipo di data viene proposto in automatico quando assegni la dicitura a un prodotto.</div>
   </div>
-  <div class="card"><h2>Archivio condiviso tra le postazioni</h2>
-    ${fsa?`<div class="muted">Metti il file dell'archivio in una cartella condivisa (Google Drive, Dropbox, OneDrive o una cartella di rete). Ogni postazione si collega allo stesso file: prodotti e impostazioni si sincronizzano in automatico.</div>
-    <div class="row" style="margin-top:8px"><button class="b p" onclick="connectFile(true)">Crea nuovo archivio…</button><button class="b" onclick="connectFile(false)">Collega archivio esistente…</button>${fileHandle?`<button class="b d" onclick="disconnectFile()">Scollega</button>`:''}</div>
-    <div class="muted">${fileHandle?'Collegato a: <b>'+esc(fileHandle.name)+'</b>':'Nessun archivio collegato: i dati restano solo in questo browser.'}</div>`
-    :`<div class="warn">Questo browser non permette di collegare un file condiviso. Usa Chrome o Edge (Mac e Windows). Nel frattempo puoi usare Esporta/Importa.</div>`}
+  <div class="card"><h2>Archivio online (tutte le postazioni)</h2>
+    ${GH?`<div class="ok" style="color:#2e6b2e">Collegato all'archivio online <b>${esc(GH.repo)}</b>. Prodotti e impostazioni si sincronizzano da soli ogni 20 secondi e a ogni salvataggio, anche senza Google Drive. Ogni salvataggio resta nello storico su GitHub.</div>
+    <div class="row" style="margin-top:8px"><button class="b" onclick="syncGH()">Sincronizza adesso</button><button class="b d" onclick="ghDisconnect()">Scollega da questo computer</button></div>`
+    :`<div class="muted">Per collegare questa postazione: incolla il nome dell'archivio e la chiave GitHub una sola volta. I prodotti già presenti qui vengono uniti a quelli online, non si perde niente.</div>
+    <div class="row" style="margin-top:8px"><label class="f">Archivio (utente/nome)<input id="ghRepo" value="manfredinigio01-bit/etichette-magiostra-dati" autocomplete="off"></label></div>
+    <div class="row"><label class="f">Chiave GitHub<input id="ghToken" type="password" placeholder="github_pat_…" autocomplete="off"></label></div>
+    <div class="row"><button class="b p" onclick="ghConnect()">Collega</button></div>`}
+    ${!GH&&fsa?`<details style="margin-top:12px"><summary class="muted">Vecchio metodo: file su Google Drive / cartella condivisa</summary>
+    <div class="row" style="margin-top:8px"><button class="b" onclick="connectFile(true)">Crea nuovo archivio…</button><button class="b" onclick="connectFile(false)">Collega archivio esistente…</button>${fileHandle?`<button class="b d" onclick="disconnectFile()">Scollega</button>`:''}</div>
+    <div class="muted">${fileHandle?'Collegato a: <b>'+esc(fileHandle.name)+'</b>':'Nessun file collegato.'}</div></details>`:''}
     <h3>Backup e importazione</h3>
     <div class="row"><button class="b" onclick="exportJSON()">Esporta backup (.json)</button><label class="b" style="cursor:pointer">Importa backup<input type="file" accept=".json" class="hidden" onchange="importJSON(this)"></label></div>
     <h3>Importa prodotti da Excel / CSV</h3>
@@ -866,7 +871,7 @@ function importCSV(text){
 
 /* ================== ARCHIVIO CONDIVISO ================== */
 function merge(a,b){
-  const out={version:1,settings:(b.settings?.updatedAt||0)>(a.settings?.updatedAt||0)?b.settings:a.settings,prodotti:[]};
+  const out={version:1,settings:(b.settings&&(b.settings.updatedAt||0)>=(a.settings?.updatedAt||0))?b.settings:a.settings /* a parità vince l'archivio (b) */,prodotti:[]};
   const m=new Map(); [...(a.prodotti||[]),...(b.prodotti||[])].forEach(p=>{ const o=m.get(p.id); if(!o||(p.updatedAt||0)>(o.updatedAt||0)) m.set(p.id,p); });
   out.prodotti=[...m.values()]; return normalize(out);
 }
@@ -887,6 +892,7 @@ async function reconnectFile(){ if(!fileHandle) return; const p=await fileHandle
 function setStatus(t,err){ const s=document.getElementById('syncStatus'); s.textContent=t; s.classList.toggle('err',!!err); }
 let syncing=false;
 async function syncNow(force){
+  if(GH) return syncGH();
   if(!fileHandle||syncing) return; syncing=true;
   try{
     const perm=await fileHandle.queryPermission({mode:'readwrite'});
@@ -902,15 +908,85 @@ async function syncNow(force){
   }catch(e){ setStatus('Errore archivio: '+e.message,true); }
   finally{ syncing=false; }
 }
+
+/* ================== ARCHIVIO ONLINE (GitHub privato) ================== */
+// I dati stanno in un file JSON in un repository GitHub PRIVATO. Ogni salvataggio è un commit: c'è lo storico completo.
+// La chiave (token "fine-grained" con solo Contents lettura/scrittura su quel repository) resta in questo browser.
+const GH_API='https://api.github.com', GH_FILE='archivio.json';
+const GH_REPO_OK=/^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
+let GH=null; try{ GH=JSON.parse(localStorage.getItem('mag_gh')||'null'); }catch(e){ GH=null; }
+if(!GH||typeof GH!=='object'||!GH_REPO_OK.test(String(GH.repo||''))||typeof GH.token!=='string') GH=null;
+let ghSyncing=false, ghPending=false;
+const ghOn=()=>!!GH;
+function b64enc(str){ const b=new TextEncoder().encode(str); let bin=''; for(let i=0;i<b.length;i+=0x8000) bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(bin); }
+function b64dec(t){ const bin=atob(String(t).replace(/\s/g,'')); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new TextDecoder().decode(u); }
+async function ghFetch(method,path,body,cfg){
+  const c=cfg||GH;
+  return fetch(GH_API+path,{method,cache:'no-store',headers:{Authorization:'Bearer '+c.token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+}
+function ghErr(r){ return r.status===401?'chiave non valida o scaduta':r.status===403?'accesso negato (permessi della chiave o limite richieste)':r.status===404?'archivio non trovato o la chiave non ha accesso':'errore GitHub '+r.status; }
+async function ghRead(){
+  const r=await ghFetch('GET',`/repos/${GH.repo}/contents/${GH_FILE}`);
+  if(r.status===404){ const t=await ghFetch('GET',`/repos/${GH.repo}`); if(t.ok) return {data:null,sha:null}; throw new Error(ghErr(t)); }
+  if(!r.ok) throw new Error(ghErr(r));
+  const j=await r.json(); let txt;
+  if(j.content) txt=b64dec(j.content);
+  else { const b=await ghFetch('GET',`/repos/${GH.repo}/git/blobs/${j.sha}`); if(!b.ok) throw new Error(ghErr(b)); txt=b64dec((await b.json()).content); } // file oltre 1 MB
+  let data=null; try{ data=txt.trim()?JSON.parse(txt):null; }catch(e){ throw new Error('archivio online illeggibile'); }
+  if(data&&(!data.settings||!Array.isArray(data.prodotti))) throw new Error('il file online non è un archivio etichette');
+  return {data,sha:j.sha};
+}
+async function syncGH(){
+  if(!GH) return; if(ghSyncing){ ghPending=true; return; } ghSyncing=true;
+  try{
+    for(let tent=0;tent<4;tent++){
+      const {data:remote,sha}=await ghRead();
+      const remoteN=remote?normalize(JSON.parse(JSON.stringify(remote))):null;
+      const before=JSON.stringify(S);
+      const merged=remoteN?merge(S,remoteN):S;
+      const mStr=JSON.stringify(merged);
+      if(mStr!==before){ S=merged; saveLocal(); if(!EDIT) render(); }
+      if(remoteN&&mStr===JSON.stringify(merge(remoteN,{}))) break; // niente di nuovo da inviare (confronto nello stesso ordine)
+      const w=await ghFetch('PUT',`/repos/${GH.repo}/contents/${GH_FILE}`,{message:`Etichette: salvataggio da ${DEV.nome||'postazione senza nome'}`,content:b64enc(JSON.stringify(merged,null,1)),...(sha?{sha}:{})});
+      if(w.ok) break;
+      if(w.status===409||w.status===422) continue; // un'altra postazione ha salvato nello stesso momento: rileggo e riunisco
+      throw new Error(ghErr(w));
+    }
+    lastSync=new Date(); setStatus('Archivio online ✓ aggiornato alle '+lastSync.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    const off=!navigator.onLine||e instanceof TypeError;
+    setStatus(off?'Senza rete: le modifiche restano qui e partono appena torna la connessione':'Archivio online: '+e.message,true);
+  }finally{ ghSyncing=false; if(ghPending){ ghPending=false; setTimeout(syncGH,300); } }
+}
+async function ghConnect(){
+  const repo=document.getElementById('ghRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/$/,'');
+  const token=document.getElementById('ghToken').value.trim();
+  if(!GH_REPO_OK.test(repo)) return alert('Scrivi l\'archivio nella forma utente/nome, per esempio manfredinigio01-bit/etichette-magiostra-dati');
+  if(!/^[A-Za-z0-9_]{20,255}$/.test(token)) return alert('Incolla la chiave GitHub (inizia con github_pat_)');
+  const cfg={repo,token};
+  try{
+    const r=await ghFetch('GET',`/repos/${repo}`,null,cfg);
+    if(!r.ok) return alert('Collegamento non riuscito: '+ghErr(r));
+    const j=await r.json();
+    if(!j.private) return alert('Questo repository è PUBBLICO: ricette e prezzi sarebbero visibili a tutti. Rendilo privato su GitHub e riprova.');
+    if(j.permissions&&!j.permissions.push) return alert('La chiave può solo leggere: dalle il permesso Contents "Read and write".');
+  }catch(e){ return alert('Collegamento non riuscito: controlla la rete'); }
+  GH=cfg; localStorage.setItem('mag_gh',JSON.stringify(GH));
+  if(fileHandle){ fileHandle=null; await kvSet('handle',null); document.getElementById('reconnect').classList.add('hidden'); }
+  await syncGH(); render();
+}
+function ghDisconnect(){ if(!confirm('Scollegare l\'archivio online da questo computer? I dati restano online e in questo browser.')) return; GH=null; localStorage.removeItem('mag_gh'); setStatus('Archivio: solo su questo computer'); render(); }
 (async()=>{
-  if('showOpenFilePicker' in window){ try{ const h=await kvGet('handle'); if(h){ fileHandle=h; await syncNow(); } }catch(e){} }
+  if(GH){ await syncGH(); }
+  else if('showOpenFilePicker' in window){ try{ const h=await kvGet('handle'); if(h){ fileHandle=h; await syncNow(); } }catch(e){} }
+  window.addEventListener('online',()=>syncNow());
   setInterval(()=>syncNow(),20000);
   window.addEventListener('focus',()=>syncNow());
 })();
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.4.3';
+const APP_VERSION='0.5.0';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');

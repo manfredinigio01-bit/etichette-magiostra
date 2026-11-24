@@ -51,3 +51,11 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 ## Da fare / idee
 - Importazione dati dal vecchio software Helmac HLL (formato da scoprire).
 - Formato etichetta definitivo e fogli adesivi laser da scegliere (stampante Samsung laser).
+
+## Archivio online (v0.5.0, 24/11/2026)
+- Sincronizzazione tramite repository GitHub PRIVATO `manfredinigio01-bit/etichette-magiostra-dati`, file `archivio.json` (JSON indentato, ogni salvataggio = commit, storico completo). API contents con `sha` → su 409/422 rilegge, unisce e riprova.
+- Chiave per postazione in `localStorage.mag_gh` ({repo, token}); token fine-grained con solo Contents read/write su quel repo. Rifiuta repo pubblici. CSP `connect-src 'self' https://api.github.com`.
+- Se GH è collegato, il vecchio metodo file (File System Access) è disattivato; resta come opzione "vecchio metodo".
+- `updatedAt` monotono (max(now, precedente+1)) su prodotti, eliminazioni e impostazioni: una modifica vince sempre sulla versione da cui parte anche se l'orologio del PC è indietro.
+- `merge`: a parità di `settings.updatedAt` vince l'archivio (b), così una postazione nuova non sovrascrive le impostazioni.
+- Claude può modificare le ricette direttamente in `archivio.json` del repo dati (alzare `updatedAt` del prodotto modificato).
