@@ -546,7 +546,7 @@ function doPrint(jobs, start){
   const bad = pr.querySelectorAll('.lbl.overflow').length;
   if(bad){ pr.innerHTML=''; alert(`Stampa bloccata: ${bad} etichett${bad>1?'e non rispettano':'a non rispetta'} il carattere minimo di legge (7 pt) perché il testo non entra.\n\nScegli un formato più grande in Impostazioni → Foglio di stampa, oppure accorcia il testo del prodotto.`); return; }
   if(f.modo==='a4'){ const per=f.cols*f.rows; DEV.start=((start||0)+labels.length)%per; saveDev(); }
-  setTimeout(()=>{window.print(); render();},50);
+  openPrint(); setTimeout(render,300);
 }
 function printCalibration(){
   const f=S.settings.foglio, e=S.settings.etichetta;
@@ -560,7 +560,19 @@ function printCalibration(){
    <div style="position:absolute;left:${30+DEV.offX}mm;top:${150+DEV.offY}mm;font:8pt Arial;background:#fff">Questa linea deve misurare esattamente 100 mm. Se è diversa la stampa è in scala: impostare Scala 100%.</div>
    <div style="position:absolute;left:${26+DEV.offX}mm;top:${17+DEV.offY}mm;font:8pt Arial;background:#fff;padding:0 1mm">← il centro della croce deve stare a 20 mm dal bordo sinistro e 20 mm dal bordo alto</div>
   </div>`;
-  const pr=document.getElementById('print'); pr.innerHTML=html; setTimeout(()=>window.print(),50);
+  const pr=document.getElementById('print'); pr.innerHTML=html; openPrint();
+}
+// La stampa va chiamata subito, dentro il tocco/clic: Safari su iPhone blocca window.print() chiamato più tardi (setTimeout).
+let printOpened=false;
+window.addEventListener('beforeprint',()=>{ printOpened=true; });
+function openPrint(){
+  printOpened=false;
+  try{ window.print(); }catch(e){}
+  if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){
+    setTimeout(()=>{ if(!printOpened) alert(navigator.standalone
+      ? 'Dall\'icona sulla schermata Home l\'iPhone non apre la stampa.\n\nApri l\'app in Safari (manfredinigio01-bit.github.io/etichette-magiostra) e premi di nuovo Stampa: si apre la finestra di stampa AirPrint.\n\nRicorda: sui fogli Markin la stampa precisa va fatta dal computer.'
+      : 'La finestra di stampa non si è aperta. Riprova toccando di nuovo il pulsante.'); },1500);
+  }
 }
 
 /* ================== UI: TAB ================== */
@@ -1015,7 +1027,7 @@ function ghDisconnect(){ if(!confirm('Scollegare l\'archivio online da questo co
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.5.1';
+const APP_VERSION='0.5.2';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
