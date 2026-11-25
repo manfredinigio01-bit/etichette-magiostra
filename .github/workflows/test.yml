@@ -20,9 +20,15 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Sintassi
-        run: node --check app.js && node --check sw.js
+        run: for d in . prova; do [ -d "$d" ] && node --check $d/app.js && node --check $d/sw.js; done
       - name: Versione coerente nei tre punti
         run: |
-          V=$(node -p "require('./version.json').version")
-          grep -q "const APP_VERSION='$V'" app.js || { echo "APP_VERSION in app.js diversa da version.json ($V)"; exit 1; }
-      - run: npm test
+          for d in . prova; do
+            [ -d "$d" ] || continue
+            V=$(node -p "require('./$d/version.json').version")
+            grep -q "const APP_VERSION='$V'" $d/app.js || { echo "$d: APP_VERSION in app.js diversa da version.json ($V)"; exit 1; }
+          done
+      - name: Test versione normale
+        run: npm test
+      - name: Test versione di prova
+        run: if [ -d prova ]; then APP_DIR=prova npm test; fi

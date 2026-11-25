@@ -10,9 +10,18 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - `manifest.webmanifest`, `icons/` – installazione.
 - Pubblicata con GitHub Pages dal branch `main`, cartella root.
 
-## Pubblicare una modifica
-1. Aumentare la versione in **tre** punti: `APP_VERSION` in `app.js`, `version.json`, nome `CACHE` in `sw.js` (il SW cancella solo le cache `etichette-*`, mai quelle della Cucina).
-2. Commit e push su `main`. Le postazioni ricevono la barra "Aggiorna ora".
+## Pubblicare una modifica (dal 25/11/2026: sempre passando dalla versione di PROVA, vedi `PROVA.md`)
+1. Modificare SOLO i file in `prova/` (https://manfredinigio01-bit.github.io/etichette-magiostra/prova/). Se `prova/` non è allineata: `node strumenti/versioni.mjs nuova-prova`.
+2. `node strumenti/versioni.mjs alza X.Y.Z "nota"`: alza la versione nei tre punti (`APP_VERSION`, `version.json`, numero della `CACHE` in `sw.js`).
+3. `APP_DIR=prova npm test`, commit e push: Giovanni prova all'indirizzo di prova.
+4. Approvato: salvare la versione in uso nel Drive `software` (1-IN-USO → 2-PRECEDENTE → storico), poi `node strumenti/versioni.mjs promuovi`, `npm test`, commit e push.
+- In prova (`PROVA` = percorso contiene `/prova/`): chiavi localStorage/IndexedDB con prefisso `prova_` (`PFX`, `KEY_DATA`), `syncGH()` legge e unisce ma non fa mai PUT, vecchio metodo file disattivato, fascia `#provabar`, niente manifest. `sw.js` è lo stesso file: con scope `/prova/` usa cache `prova-etichette-vN`; quello normale ignora `/cucina/` e `/prova/`.
+
+## Test automatici (25/11/2026)
+- `npm test` (Node 22 + Playwright, Chrome senza finestra; in locale `CHROME_PATH=/percorso/chrome npm test`), `APP_DIR=prova npm test` per la prova. Su GitHub girano a ogni push (`.github/workflows/test.yml`): X rossa = non promuovere.
+- Solo prodotti INVENTATI in `tests/fixtures/prodotti-prova.json`: il repository è pubblico, mai dati veri.
+- `tests/fixtures/impronta-etichette.json`: HTML esatto delle etichette di prova. Se una modifica VOLUTA cambia le etichette: `AGGIORNA_IMPRONTA=1 npm test` e spiegarlo nel commit.
+- Dati veri prima/dopo una modifica importante: `node tests/confronto-dati-veri.mjs <archivio.json> tests/locale/prima.json` (cartella ignorata da git), poi di nuovo e confrontare. 25/11: 87 prodotti, 174 etichette, 0 fuori misura.
 
 ## Dati
 - I dati NON sono nel repository: `localStorage` (`mag_data`, `mag_dev`) + file JSON condiviso scelto dall'utente (File System Access API, solo Chrome/Edge).

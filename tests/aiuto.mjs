@@ -10,6 +10,9 @@ export const RADICE = fileURLToPath(new URL('..', import.meta.url));
 const TIPI = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.woff2': 'font/woff2', '.css': 'text/css' };
 
+// APP_DIR=prova npm test  → gli stessi test sulla versione di prova
+export const PERCORSO = process.env.APP_DIR ? `/${process.env.APP_DIR}/index.html` : '/index.html';
+
 export async function avviaServer() {
   const srv = http.createServer(async (req, res) => {
     const percorso = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '');
@@ -30,7 +33,7 @@ export async function avviaBrowser() {
 }
 
 // Apre l'app in un profilo pulito. Raccoglie errori JavaScript e violazioni della CSP.
-export async function apriApp(browser, url, { prodotti = null, percorso = '/index.html' } = {}) {
+export async function apriApp(browser, url, { prodotti = null, percorso = PERCORSO } = {}) {
   const ctx = await browser.newContext({ serviceWorkers: 'block' });
   const pagina = await ctx.newPage();
   const errori = [];
