@@ -60,12 +60,7 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - `merge`: a parità di `settings.updatedAt` vince l'archivio (b), così una postazione nuova non sovrascrive le impostazioni.
 - Claude può modificare le ricette direttamente in `archivio.json` del repo dati (alzare `updatedAt` del prodotto modificato).
 
-## App Cucina (cartella `cucina/`, v1.0.0, 25/11/2026)
-- App SEPARATA (ricettario, food cost, prezzi d'acquisto, archivio piatti), stesso repo per comodità di pubblicazione: https://manfredinigio01-bit.github.io/etichette-magiostra/cucina/ — manifest, service worker (`cucina-vN`) e version.json propri. Il SW delle etichette ignora `/cucina/`.
-- Pubblicare: alzare `APP_VERSION` in `cucina/app.js`, `cucina/version.json`, `CACHE` in `cucina/sw.js`.
-- Dati: repo PRIVATO `manfredinigio01-bit/magiostra-cucina-dati`, file `ricettario.json` (ingredienti, packaging, ricette, archivio piatti, stagionalità, mappaFatture voce→ingrediente, importati). Unione per `updatedAt` come le etichette; a parità vince l'archivio online.
-- Sicurezza: password all'apertura; token + copia locale cifrati AES-GCM 256 con chiave PBKDF2-SHA256 600.000 iterazioni (IndexedDB `cucina-magiostra`: vault, cache, dir). Blocco dopo 30 min. CSP senza `unsafe-inline` negli script: niente onclick inline, solo data-act.
-- Food cost: `calc()` replica esattamente le formule del file Excel v10 (verificato su 104 schede, differenze 0). L'export Excel (ExcelJS, `lib/`) riscrive la stessa struttura con formule; ricalcolato con LibreOffice = valori dell'app.
-- Lettura file in locale: fatture FatturaPA (.xml, .p7m, .zip), PROPOSTE della GASTRONOMIA (.docx) → archivio piatti, .xlsx con righe descrizione/prezzo. Regole prezzi: ultimo prezzo pagato netto (PrezzoTotale/Quantita), farine solo Mulino Sobrino, formato più grande a parità di data.
-- Cartella Drive collegata (File System Access): scrive "Cucina La Magiostra - ricettario e food cost.xlsx", backup JSON e "Backup Cucina/cucina-AAAA-MM-GG.json".
-- Collegamento etichette: `ricetta.etichetta` = id prodotto in `etichette-magiostra-dati/archivio.json`; l'app può creare/aggiornare il testo ingredienti di un'etichetta (ordine per peso).
+## App Cucina (separata)
+- Dal 25/11/2026 sta nel repo `manfredinigio01-bit/cucina-magiostra` (https://manfredinigio01-bit.github.io/cucina-magiostra/), con il suo CLAUDE.md. Dati: repo privato `magiostra-cucina-dati`.
+- Qui resta solo `cucina/`: pagina di rimando + service worker che si autodistrugge (Edge non installava la Cucina dentro lo scope delle etichette). Il SW delle etichette ignora `/cucina/`.
+- La Cucina legge e può aggiornare `etichette-magiostra-dati/archivio.json` (testo ingredienti in ordine di peso).
