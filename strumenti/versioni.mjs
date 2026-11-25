@@ -8,26 +8,36 @@
 //
 // Regola: si modifica SOLO in prova/, si prova all'indirizzo .../prova/, poi "promuovi". Prima di promuovere
 // la versione in uso va salvata nella cartella Drive "software" (vedi 00-LEGGIMI-PRIMA.pdf).
-import { readFile, writeFile, mkdir, cp, access } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, cp, access, rm, readdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RADICE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PROVA = join(RADICE, 'prova');
 // file che compongono l'app (gli stessi nelle due versioni)
-const FILE_APP = ['index.html', 'app.js', 'sw.js', 'version.json', 'manifest.webmanifest', 'icons', 'lib'];
+const FILE_APP = ['index.html', 'app.js', 'js', 'stile.css', 'caratteri.css', 'sw.js', 'version.json', 'manifest.webmanifest', 'icons', 'lib'];
 
 const esiste = (p) => access(p).then(() => true, () => false);
 const leggi = (p) => readFile(p, 'utf8');
+// il file che contiene APP_VERSION: app.js, oppure uno dei file in js/
+async function fileVersione(dir) {
+  const candidati = [join(dir, 'app.js'), ...((await esiste(join(dir, 'js'))) ? (await readdir(join(dir, 'js'))).map((f) => join(dir, 'js', f)) : [])];
+  for (const f of candidati) if ((await esiste(f)) && /const APP_VERSION\s*=/.test(await leggi(f))) return f;
+  throw new Error('APP_VERSION non trovata in ' + dir);
+}
 async function versione(dir) {
   const v = JSON.parse(await leggi(join(dir, 'version.json'))).version;
-  const app = (await leggi(join(dir, 'app.js'))).match(/const APP_VERSION\s*=\s*'([^']+)'/)?.[1];
+  const app = (await leggi(await fileVersione(dir))).match(/const APP_VERSION\s*=\s*'([^']+)'/)?.[1];
   const cache = (await leggi(join(dir, 'sw.js'))).match(/-v(\d+)'/)?.[1];
   return { v, app, cache: Number(cache) };
 }
 const confronta = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
+// copia i file dell'app; quelli che nella sorgente non esistono più vengono tolti dalla destinazione
 async function copia(da, a) {
-  for (const f of FILE_APP) if (await esiste(join(da, f))) await cp(join(da, f), join(a, f), { recursive: true, force: true });
+  for (const f of FILE_APP) {
+    if (await esiste(join(da, f))) { await rm(join(a, f), { recursive: true, force: true }); await cp(join(da, f), join(a, f), { recursive: true }); }
+    else if (await esiste(join(a, f))) { await rm(join(a, f), { recursive: true, force: true }); console.log('tolto (non più usato): ' + f); }
+  }
 }
 const fine = (msg) => { console.error('FERMO: ' + msg); process.exit(1); };
 
@@ -47,7 +57,7 @@ if (comando === 'stato') {
   const n = await versione(RADICE), p = await versione(PROVA);
   if (confronta(nuova, n.v) <= 0) fine(`la nuova versione deve essere più alta di quella normale (${n.v})`);
   const cache = Math.max(n.cache, p.cache) + 1;
-  const app = join(PROVA, 'app.js'), sw = join(PROVA, 'sw.js');
+  const app = await fileVersione(PROVA), sw = join(PROVA, 'sw.js');
   await writeFile(app, (await leggi(app)).replace(/const APP_VERSION\s*=\s*'[^']+'/, `const APP_VERSION='${nuova}'`));
   await writeFile(sw, (await leggi(sw)).replace(/-v\d+'/, `-v${cache}'`));
   const oggi = new Date().toISOString().slice(0, 10);

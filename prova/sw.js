@@ -1,9 +1,13 @@
 // Service worker: prima la rete (così gli aggiornamenti arrivano subito), poi la copia salvata (funziona offline).
 // Lo stesso file serve la versione normale e quella di prova (cartella prova/): le cache hanno nomi diversi.
 const PROVA = self.registration.scope.includes('/prova/');
-const CACHE = (PROVA ? 'prova-' : '') + 'etichette-v30';
+const CACHE = (PROVA ? 'prova-' : '') + 'etichette-v31';
 const PREFISSO = PROVA ? 'prova-etichette-' : 'etichette-';
-const FILES = ['./', './index.html', './app.js', './manifest.webmanifest', './version.json', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon.png'];
+// tutti i file dell'app: servono per funzionare senza internet (stesso ordine di index.html)
+const FILES = ['./', './index.html', './caratteri.css', './stile.css',
+  ...['avvio-prova', 'loghi', 'allergeni-e-dati-base', 'stato', 'etichetta', 'stampa', 'schermata-stampa', 'schermata-prodotti',
+    'schermata-impostazioni', 'archivio-file', 'archivio-online', 'versione-e-pulsanti'].map(n => `./js/${n}.js`),
+  './manifest.webmanifest', './version.json', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith(PREFISSO) && k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
 self.addEventListener('fetch', e => {
