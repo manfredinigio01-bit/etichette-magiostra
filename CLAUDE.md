@@ -33,7 +33,7 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 
 ## Decisioni di Giovanni (11/11/2026)
 - Si lavora solo dalla chat Claude del progetto; Claude pubblica direttamente su `main`.
-- Layout predefinito: logo **compatto** (sole piccolo + ragione sociale + indirizzo), niente "CUCINA", niente telefono/email, niente data di produzione stampata, piè di pagina compatto. Migrazione una tantum tramite flag `settings.layout024`.
+- Layout predefinito: logo **compatto** (sole piccolo + ragione sociale + indirizzo), niente "CUCINA" (poi tornata il 18/11, v0.3.3, migrazione `layout031`), niente telefono/email, niente data di produzione stampata, piè di pagina compatto. Migrazione una tantum tramite flag `settings.layout024`.
 - Testo **sempre a 7 pt** (minimo di legge), mai ingrandito; nome prodotto 9 pt. La stampa è BLOCCATA se il testo non entra (niente eccezioni sotto i 7 pt).
 - Ragione sociale: "La Magiostra di Aquilino e C. snc", Via Grado 1 – 26100 Cremona (CR).
 - Formati: oggi 60×70 (circa 510 caratteri di ingredienti con prezzo); preset A4 66×80 (circa 740).
@@ -55,7 +55,8 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 
 ## Archivio online (v0.5.0, 24/11/2026)
 - Sincronizzazione tramite repository GitHub PRIVATO `manfredinigio01-bit/etichette-magiostra-dati`, file `archivio.json` (JSON indentato, ogni salvataggio = commit, storico completo). API contents con `sha` → su 409/422 rilegge, unisce e riprova.
-- Chiave per postazione in `localStorage.mag_gh` ({repo, token}); token fine-grained con solo Contents read/write su quel repo. Rifiuta repo pubblici. CSP `connect-src 'self' https://api.github.com`.
+- Chiave per postazione in `localStorage.mag_gh` (fino a v0.6.1: {repo, token} in chiaro); token fine-grained con solo Contents read/write su quel repo. Rifiuta repo pubblici. CSP `connect-src 'self' https://api.github.com`.
+- **v0.7.0 (25/11/2026): chiave cifrata con password della postazione.** `mag_gh` = `{v:2, repo, iter, salt, iv, ct}`: AES-GCM 256, chiave PBKDF2-SHA256 600.000 passaggi (stesso schema dell'app Cucina). `GHCFG` = configurazione salvata, `GH` = {repo, token} solo in memoria dopo lo sblocco. Decisione di Giovanni: **password solo per sincronizzare** — stampa e modifiche funzionano sempre; da bloccato `syncGH()` non parte e le modifiche restano in `mag_data`, partono allo sblocco (unione per `updatedAt`). Lo sblocco dura finché l'app resta aperta; pulsante "Blocca adesso". Barra `#ghbar` (bloccato / chiave non protetta). Password minimo 8 caratteri; dopo 3 errori attesa crescente 5 s → 5 min (`mag_gh_fail`, `mag_gh_failt`). Vecchio formato in chiaro: continua a sincronizzare con avviso finché sulla postazione non si sceglie una password ("Proteggi la chiave"). Password dimenticata = Scollega e ricollega con una chiave GitHub nuova. Con `GHCFG` presente il vecchio metodo file non parte mai, nemmeno da bloccato. Collaudo con Chrome e GitHub simulato: 33 controlli (`collaudo.py` nella sessione del 25/11).
 - Se GH è collegato, il vecchio metodo file (File System Access) è disattivato; resta come opzione "vecchio metodo".
 - `updatedAt` monotono (max(now, precedente+1)) su prodotti, eliminazioni e impostazioni: una modifica vince sempre sulla versione da cui parte anche se l'orologio del PC è indietro.
 - `merge`: a parità di `settings.updatedAt` vince l'archivio (b), così una postazione nuova non sovrascrive le impostazioni.
