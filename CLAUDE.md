@@ -3,14 +3,15 @@
 App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronomia vegetale, Cremona). Utente: Giovanni. Lingua dell'interfaccia: italiano.
 
 ## Struttura
-- `index.html` – tutta l'app (HTML + CSS + JS vanilla, nessuna dipendenza). Loghi incorporati come PNG base64 (`LOGO_SOLE`, `LOGO_SCRITTA`).
+- `index.html` – struttura e CSS; `app.js` – tutto il codice (JS vanilla, nessuna dipendenza). Loghi e font incorporati come base64 (`LOGO_SOLE`, `LOGO_SCRITTA`).
+- **v0.6.0 (25/11/2026):** niente JavaScript dentro l'HTML. CSP `script-src 'self'` (senza `unsafe-inline`). Gli eventi usano `data-h-click|change|input="N"` → funzione `HANDLERS[N](el,ev)` in fondo ad `app.js`; i parametri passano in `data-click0`, `data-change0`… Per un nuovo pulsante: aggiungere una voce in `HANDLERS`, mai `onclick=`.
 - `sw.js` – service worker (prima la rete, poi la cache → funziona offline).
 - `version.json` – versione pubblicata; l'app la confronta con `APP_VERSION` e mostra "Aggiorna ora".
 - `manifest.webmanifest`, `icons/` – installazione.
 - Pubblicata con GitHub Pages dal branch `main`, cartella root.
 
 ## Pubblicare una modifica
-1. Aumentare la versione in **tre** punti: `APP_VERSION` in `index.html`, `version.json`, nome `CACHE` in `sw.js`.
+1. Aumentare la versione in **tre** punti: `APP_VERSION` in `app.js`, `version.json`, nome `CACHE` in `sw.js` (il SW cancella solo le cache `etichette-*`, mai quelle della Cucina).
 2. Commit e push su `main`. Le postazioni ricevono la barra "Aggiorna ora".
 
 ## Dati
@@ -40,17 +41,17 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - Fogli: Markin 210A420 63,5×72, 12/foglio (preset `L7164`), niente linee di taglio, margine interno 3 mm (migrazione `layout029`).
 - Prezzo (v0.3.0): `tipoPrezzo` 'kg' (prezzoKg) o 'pezzo' (prezzoPezzo fisso). Decisione Giovanni 18/11: in etichetta SOLO il prezzo scelto (al kg = €/kg, al pezzo = € confezione), nessun totale né €/kg aggiuntivo. Scelta anche in stampa (FORM.tipoPrezzo).
 
-- Linea di punta (v0.4.0): prodotto `linea:'punta'` + `categoria` (settings.categorie: id, nome, colore) + `fraseFronte`. In stampa ogni confezione = 2 etichette 63,5×72: `frontHTML` (nome grande Oswald nel colore categoria, sottotitolo DM Serif, fascia colore con categoria e peso netto) + retro `labelHTML` con classe `pt` (accenti colore). Font Oswald/DM Serif Display incorporati base64 (OFL), CSP `font-src 'self' data:`. Palette colori definitive: in attesa da Giovanni. v0.4.1: `settings.stileFronte` a|b (B = fascia verticale a sinistra con sole bianco via filter:invert, `frontHTML_B`). v0.4.2: Giovanni ha scelto lo stile A; `sanitize` forza 'a' e il selettore è stato tolto.
+- Linea di punta (v0.4.0): prodotto `linea:'punta'` + `categoria` (settings.categorie: id, nome, colore) + `fraseFronte`. In stampa ogni confezione = 2 etichette 63,5×72: `frontHTML` (nome grande Oswald nel colore categoria, sottotitolo DM Serif, fascia colore con categoria e peso netto) + retro `labelHTML` con classe `pt` (accenti colore). Font Oswald/DM Serif Display incorporati base64 (OFL), CSP `font-src 'self' data:`. Palette colori definitive: in attesa da Giovanni. v0.4.2: Giovanni ha scelto lo stile A; lo stile B è stato rimosso dal codice (v0.6.0), `sanitize` forza 'a'.
 
 ## Sicurezza (v0.2.6)
-- CSP: `connect-src 'self'`, nessuna risorsa esterna. Non aggiungere CDN, analytics o font esterni.
+- CSP: `script-src 'self'`, `connect-src 'self' https://api.github.com`, nessuna risorsa esterna. Non aggiungere CDN, analytics o font esterni.
 - `sanitize()` ripulisce ogni dato caricato (archivio condiviso, backup, localStorage): id solo `[A-Za-z0-9_-]`, numeri limitati, logo solo data:image png/jpeg/webp. Ogni campo nuovo va aggiunto lì.
 - Tutto il testo inserito nell'HTML passa da `esc()`.
 - `updatedBy` = nome postazione (DEV.nome) su prodotti salvati/eliminati.
 
 ## Da fare / idee
-- Importazione dati dal vecchio software Helmac HLL (formato da scoprire).
-- Formato etichetta definitivo e fogli adesivi laser da scegliere (stampante Samsung laser).
+- Palette colori definitive della linea di punta (in attesa da Giovanni).
+- 25/11/2026: importati 64 prodotti dalla bilancia Mainardi (id `mndNNN`), dopo l'approvazione di Giovanni prodotto per prodotto.
 
 ## Archivio online (v0.5.0, 24/11/2026)
 - Sincronizzazione tramite repository GitHub PRIVATO `manfredinigio01-bit/etichette-magiostra-dati`, file `archivio.json` (JSON indentato, ogni salvataggio = commit, storico completo). API contents con `sha` → su 409/422 rilegge, unisce e riprova.

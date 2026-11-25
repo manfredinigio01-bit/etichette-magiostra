@@ -1,1 +1,1 @@
-{"version": "0.5.4", "data": "2026-11-25", "note": "Separazione dall'app Cucina"}
+{"version": "0.6.0", "data": "2026-11-25", "note": "Sicurezza: niente JavaScript dentro la pagina (CSP rigida); pulizia"}
