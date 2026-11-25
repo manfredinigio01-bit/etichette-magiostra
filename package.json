@@ -1,0 +1,12 @@
+{
+  "name": "etichette-magiostra",
+  "private": true,
+  "description": "Solo per i test automatici: l'app non ha dipendenze e non usa questo file.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1"
+  }
+}

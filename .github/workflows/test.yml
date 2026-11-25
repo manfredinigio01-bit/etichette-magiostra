@@ -1,0 +1,28 @@
+# Controllo automatico: a ogni modifica fa girare i test (regole di legge, sicurezza, dati).
+# Se compare una X rossa, la modifica ha rotto qualcosa: NON va pubblicata in produzione.
+name: Test etichette
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Sintassi
+        run: node --check app.js && node --check sw.js
+      - name: Versione coerente nei tre punti
+        run: |
+          V=$(node -p "require('./version.json').version")
+          grep -q "const APP_VERSION='$V'" app.js || { echo "APP_VERSION in app.js diversa da version.json ($V)"; exit 1; }
+      - run: npm test
