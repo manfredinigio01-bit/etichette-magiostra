@@ -368,13 +368,16 @@ function openPrint(){
 }
 
 /* ================== UI: TAB ================== */
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab; document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b)); render();});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab; document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b)); render.newTab=true; render(); scrollTo(0,0);});
 function render(){
   document.getElementById('hdrLogo').src=LOGO_SCRITTA;
   const m=document.getElementById('main');
+  const y=scrollY, keep=render.newTab?[]:[...m.querySelectorAll('.plist,.scroll')].map(e=>e.scrollTop); render.newTab=false; // le liste restano dove eri
   if(TAB==='stampa') m.innerHTML=viewStampa();
   else if(TAB==='prodotti') m.innerHTML=viewProdotti();
   else m.innerHTML=viewImpostazioni();
+  m.querySelectorAll('.plist,.scroll').forEach((e,k)=>{ if(keep[k]!=null) e.scrollTop=keep[k]; });
+  scrollTo(0,y);
   afterRender();
 }
 function afterRender(){
@@ -819,7 +822,7 @@ function ghDisconnect(){ if(!confirm('Scollegare l\'archivio online da questo co
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.6.0';
+const APP_VERSION='0.6.1';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
