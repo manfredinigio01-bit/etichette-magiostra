@@ -195,18 +195,18 @@ const LOGO_SCRITTA="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAAEtCAYAAA
 
 /* ================== DATI DI BASE ================== */
 const ALLERGENI = [
- {k:'glutine', n:'Cereali con glutine', t:'cereali contenenti glutine', w:['grano duro','grano tenero','grano','frumento','segale','orzo','avena','farro','kamut','khorasan','spelta','glutine','seitan','semola','semolato','semolino','triticale','bulgur','couscous','cous cous','cuscus']},
+ {k:'glutine', n:'Cereali con glutine', t:'cereali contenenti glutine', w:['grano duro','grano tenero','grano','farina tipo 00','farina tipo 0','farina tipo 1','farina tipo 2','farina 00','farina 0','frumento','segale','orzo','avena','farro','kamut','khorasan','spelta','glutine','seitan','semola','semolato','semolino','triticale','bulgur','couscous','cous cous','cuscus']},
  {k:'crostacei', n:'Crostacei', t:'crostacei', w:['crostacei','gambero','gamberi','gamberetti','scampi','scampo','aragosta','astice','granchio','granchi','mazzancolle']},
  {k:'uova', n:'Uova', t:'uova', w:['uovo','uova','albume','albumi','tuorlo','tuorli','ovoprodotti']},
  {k:'pesce', n:'Pesce', t:'pesce', w:['pesce','acciuga','acciughe','alici','tonno','salmone','merluzzo','baccalà','sgombro','sardine','colatura di alici']},
  {k:'arachidi', n:'Arachidi', t:'arachidi', w:['arachide','arachidi','noccioline']},
- {k:'soia', n:'Soia', t:'soia', w:['soia','tofu','tempeh','edamame','tamari','shoyu','miso']},
+ {k:'soia', n:'Soia', t:'soia', w:['soia','soya','soja','tofu','tempeh','edamame','tamari','shoyu','miso']},
  {k:'latte', n:'Latte', t:'latte', w:['latte','lattosio','burro','panna','formaggio','formaggi','ricotta','mozzarella','parmigiano','grana padano','caseina','caseinato','siero di latte','yogurt','mascarpone','stracchino','crescenza','gorgonzola','pecorino','provola','scamorza']},
  {k:'guscio', n:'Frutta a guscio', t:'frutta a guscio', w:['frutta a guscio','mandorla','mandorle','nocciola','nocciole','noce','noci','anacardo','anacardi','pistacchio','pistacchi','noci pecan','pecan','macadamia','noci del brasile']},
  {k:'sedano', n:'Sedano', t:'sedano', w:['sedano rapa','sedano']},
  {k:'senape', n:'Senape', t:'senape', w:['senape']},
  {k:'sesamo', n:'Sesamo', t:'sesamo', w:['sesamo','tahina','tahin','gomasio']},
- {k:'solfiti', n:'Anidride solforosa e solfiti', t:'anidride solforosa e solfiti', w:['anidride solforosa','solfiti','solfito','metabisolfito']},
+ {k:'solfiti', n:'Anidride solforosa e solfiti', t:'anidride solforosa e solfiti', w:['anidride solforosa','solfiti','solfito','metabisolfito','vino','vino rosso','vino bianco','aceto di vino','aceto balsamico','marsala']},
  {k:'lupini', n:'Lupini', t:'lupini', w:['lupini','lupino']},
  {k:'molluschi', n:'Molluschi', t:'molluschi', w:['molluschi','cozze','vongole','calamari','calamaro','polpo','seppia','seppie','ostriche']}
 ];
@@ -1027,7 +1027,7 @@ function ghDisconnect(){ if(!confirm('Scollegare l\'archivio online da questo co
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.5.2';
+const APP_VERSION='0.5.3';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
