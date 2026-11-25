@@ -1027,7 +1027,7 @@ function ghDisconnect(){ if(!confirm('Scollegare l\'archivio online da questo co
 window.addEventListener('afterprint',()=>{ document.getElementById('print').innerHTML=''; });
 
 /* ================== VERSIONE E AGGIORNAMENTI ================== */
-const APP_VERSION='0.5.3';
+const APP_VERSION='0.5.4';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
