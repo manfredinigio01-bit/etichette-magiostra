@@ -76,3 +76,11 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - Dal 25/11/2026 sta nel repo `manfredinigio01-bit/cucina-magiostra` (https://manfredinigio01-bit.github.io/cucina-magiostra/), con il suo CLAUDE.md. Dati: repo privato `magiostra-cucina-dati`.
 - Qui resta solo `cucina/`: pagina di rimando + service worker che si autodistrugge (Edge non installava la Cucina dentro lo scope delle etichette). Il SW delle etichette ignora `/cucina/`.
 - La Cucina legge e può aggiornare `etichette-magiostra-dati/archivio.json` (testo ingredienti in ordine di peso).
+
+## Surgelati (PROVA 0.8.1, 25/11/2026)
+- Nel testo ingredienti `parola*` (asterisco attaccato alla fine) = ingrediente surgelato; `*parola*` resta grassetto forzato solo se l'asterisco di apertura NON segue una lettera/cifra/parentesi (`RE_BOLD`). `highlight()` restituisce anche `surg`.
+- Se c'è almeno un surgelato e le diciture non parlano già di surgelato/congelato, sotto gli ingredienti compare "*Ingrediente surgelato." (`noteSurg`).
+- Editor: caselle "Ingredienti surgelati" (`ingParts`, `toggleSurg`, handler 101), avviso se c'è scritto "semilavorato" o se le diciture parlano di surgelato senza asterisco.
+- Prodotto `stato`: '' | 'decongelato' | 'surgelato' (handler 102) → riga "PRODOTTO DECONGELATO / SURGELATO" sotto il nome (anche sul fronte della linea di punta). Reg. UE 1169/2011 all. VI parte A punto 2: "decongelato" obbligatorio per alimenti congelati e venduti scongelati; NON obbligatorio per gli ingredienti (l'asterisco è facoltativo ma corretto). Avvisi sulla conservazione (−18 °C).
+- Corretto: `updatedBy` non veniva salvato (era finito dentro un commento in `saveProduct`).
+- Impronta invariata e 87 prodotti veri identici: le novità compaiono solo se usate.

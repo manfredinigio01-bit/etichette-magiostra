@@ -4,7 +4,7 @@ if(PROVA){ // versione di prova: ben riconoscibile, non installabile come app
   document.querySelector('link[rel="manifest"]')?.remove();
   document.body.insertAdjacentHTML('afterbegin','<div id="provabar" style="background:#ffd54a;color:#3a2a00;padding:6px 20px;font-weight:600;font-size:13px;text-align:center">VERSIONE DI PROVA — dati separati da quelli veri; l\'archivio online si legge ma non si modifica. Per il lavoro vero usa la versione normale.</div>');
 }
-const APP_VERSION='0.8.0';
+const APP_VERSION='0.8.1';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
@@ -44,7 +44,7 @@ const HANDLERS={
   25:(el,ev)=>{ EDIT=null;render() },
   26:(el,ev)=>{ ed('nome',el.value) },
   27:(el,ev)=>{ ed('sottotitolo',el.value) },
-  28:(el,ev)=>{ ed('ingredienti',el.value);document.getElementById('alfound').innerHTML=alFoundHTML(el.value) },
+  28:(el,ev)=>{ ed('ingredienti',el.value);document.getElementById('alfound').innerHTML=alFoundHTML(el.value);document.getElementById('surgbox').innerHTML=surgBoxHTML(EDIT) },
   29:(el,ev)=>{ toggleTraccia(el.dataset.change0,el.checked) },
   30:(el,ev)=>{ ed('tracceExtra',el.value) },
   31:(el,ev)=>{ setCons(el.value) },
@@ -116,7 +116,9 @@ const HANDLERS={
   97:(el,ev)=>{ ghUnlock('ghPwBar') },
   98:(el,ev)=>{ ghProtect('ghPwNew1','ghPwNew2') },
   99:(el,ev)=>{ ghUnlock('ghPwCard') },
-  100:(el,ev)=>{ ghLock() }
+  100:(el,ev)=>{ ghLock() },
+  101:(el,ev)=>{ toggleSurg(+el.dataset.change0) },
+  102:(el,ev)=>{ ed('stato',el.value,true) }
 };
 ['click','change','input'].forEach(t=>document.addEventListener(t,ev=>{
   let el=ev.target.closest&&ev.target.closest('[data-h-'+t+']');

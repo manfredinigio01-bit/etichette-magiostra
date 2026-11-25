@@ -25,12 +25,18 @@ const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const RE_ALL = new RegExp('(?<!\\p{L})(' + ALL_WORDS.map(reEsc).join('|') + ')(?!\\p{L})','giu');
 const RE_EXC = new RegExp('(?<!\\p{L})(' + ESCLUSIONI.map(reEsc).join('|') + ')(?!\\p{L})','giu');
 
+// *parola* = grassetto forzato (l'asterisco di apertura non deve seguire una lettera).
+// parola* = ingrediente surgelato: asterisco attaccato alla fine della parola; la nota "*Ingrediente surgelato." la aggiunge l'etichetta.
+const RE_BOLD=/(?<![\p{L}\p{N})\]])\*([^*\s][^*]*?)\*/gu;
+const RE_SURG=/(?<=[\p{L}\p{N})\]])\*/u;
 function highlight(text, upper){
-  // *parola* = grassetto forzato
-  const found = new Set(); let html='';
-  const parts = String(text||'').split(/\*([^*]+)\*/);
+  const found = new Set(); let html='', surg=false;
+  const parts=[]; const src=String(text||''); let last0=0, mb; RE_BOLD.lastIndex=0;
+  while((mb=RE_BOLD.exec(src))){ parts.push(src.slice(last0,mb.index),mb[1]); last0=mb.index+mb[0].length; }
+  parts.push(src.slice(last0));
   parts.forEach((seg,i)=>{
     if(i%2===1){ html += `<b class="al">${esc(upper?seg.toUpperCase():seg)}</b>`; const k=W2A[seg.toLowerCase()]; if(k)found.add(k); else found.add('manuale:'+seg); return; }
+    if(RE_SURG.test(seg)) surg=true;
     const prot=[]; let m; RE_EXC.lastIndex=0;
     while((m=RE_EXC.exec(seg))){ const ph=m[1].toLowerCase(); const fw=ph.startsWith('grano saraceno')?'grano':ph.startsWith('farina di grano saraceno')?'farina di grano':ph.split(' ')[0]; prot.push([m.index,m.index+fw.length]); }
     let last=0; RE_ALL.lastIndex=0;
@@ -42,8 +48,28 @@ function highlight(text, upper){
     }
     html += esc(seg.slice(last));
   });
-  return {html, found:[...found]};
+  return {html, found:[...found], surg};
 }
+// ingredienti di primo livello (separati da virgola o punto fuori dalle parentesi), con la posizione del nome
+function ingParts(text){
+  const t=String(text||''), out=[]; let depth=0, start=0;
+  const push=(a,b)=>{ const seg=t.slice(a,b); const s0=a+(seg.length-seg.trimStart().length);
+    const cut=t.slice(s0,b).search(/[(\[:]/); let e0=cut<0?b:s0+cut; while(e0>s0&&/[\s.]/.test(t[e0-1])) e0--;
+    const name=t.slice(s0,e0), bold=/^\*[^*]+\*$/.test(name);
+    if(name.replace(/\*/g,'').trim()) out.push({s:s0,e:e0,nome:name.replace(/\*/g,'').trim(),surg:!bold&&/[\p{L}\p{N})\]]\*$/u.test(name)}); };
+  for(let i=0;i<t.length;i++){ const c=t[i];
+    if(c==='('||c==='[') depth++; else if((c===')'||c===']')&&depth>0) depth--;
+    else if(depth===0&&(c===','||(c==='.'&&(i+1>=t.length||/\s/.test(t[i+1]))))){ push(start,i); start=i+1; } }
+  push(start,t.length);
+  return out;
+}
+function toggleSurg(k){
+  const x=ingParts(EDIT.ingredienti)[k]; if(!x) return; const t=EDIT.ingredienti;
+  EDIT.ingredienti = x.surg ? t.slice(0,x.e-1)+t.slice(x.e) : t.slice(0,x.e)+'*'+t.slice(x.e);
+  render();
+}
+const STATI={'':'','decongelato':'Prodotto decongelato','surgelato':'Prodotto surgelato'};
+const noteSurg=(p,hl)=>hl.surg&&!/surgelat|congelat/i.test(p.diciture||'')?'*Ingrediente surgelato.':'';
 
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const now = () => Date.now();

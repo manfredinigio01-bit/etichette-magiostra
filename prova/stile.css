@@ -103,6 +103,7 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
 .lbl .cont{text-align:center}
 .lbl .pn{font-weight:700;text-align:center;margin-top:1mm;font-size:9pt;line-height:1.05;text-transform:uppercase}
 .lbl .ps{text-align:center;font-size:var(--m);margin-top:.2mm}
+.lbl .stt{font-weight:700;text-transform:uppercase;letter-spacing:.03em}
 .lbl .body{flex:1;min-height:0;overflow:hidden;margin-top:1.2mm}
 .lbl .fit p{margin:0 0 .7mm 0;text-align:left}
 .lbl .fit b.al{font-weight:900}

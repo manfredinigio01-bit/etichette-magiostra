@@ -34,7 +34,7 @@ function frontHTML_A(job){
   return `<div class="lbl fr" style="width:${W}mm;height:${H}mm"><div class="fi" style="inset:${P}mm">
     <div class="top"><img src="${LOGO_SOLE}" style="height:${sunH}mm"><div><div class="brand">${esc(st.azienda.nome||'La Magiostra')}</div><div class="sub">${esc(st.azienda.sottotitolo||'Cucina')} · Cremona</div></div></div>
     <div class="nmbox"><div class="nm" style="color:${c.colore}">${esc(p.nome||'Prodotto')}</div>
-      ${p.sottotitolo?`<div class="ds">${esc(p.sottotitolo)}</div>`:''}
+      ${p.sottotitolo?`<div class="ds">${esc(p.sottotitolo)}</div>`:''}${p.stato?`<div class="fd stt">${esc(STATI[p.stato])}</div>`:''}
       ${p.fraseFronte?`<div class="fd">${esc(p.fraseFronte)}</div>`:''}</div>
     <img class="wm" src="${LOGO_SOLE}">
     <div class="band" style="background:${c.colore}"><span class="ct">${esc((c.nome||'').toUpperCase())}</span><span class="pw">${job.kg!=null?pesoBreve(job.kg):''}</span></div>
@@ -82,10 +82,10 @@ function labelHTML(job, opts={}){
     ${compatto?'':`${a.ragioneSociale?`<div class="rs" style="font-size:${minPt}pt">${esc(a.ragioneSociale)}</div>`:''}
     <div class="addr" style="font-size:${minPt}pt">${esc(a.indirizzo)}</div>
     ${e.mostraContatti&&a.contatti?`<div class="cont" style="font-size:${minPt}pt">${esc(a.contatti)}</div>`:''}`}
-    <div class="pn">${esc(p.nome||'Prodotto')}</div>
+    <div class="pn">${esc(p.nome||'Prodotto')}</div>${p.stato?`<div class="ps stt">${esc(STATI[p.stato])}</div>`:''}
     ${p.sottotitolo?`<div class="ps">${esc(p.sottotitolo)}</div>`:''}
     <div class="body"><div class="fit">
-      <p class="ing"><b>Ingredienti:</b> ${hl.html}</p>
+      <p class="ing"><b>Ingredienti:</b> ${hl.html}</p>${noteSurg(p,hl)?`<p>${noteSurg(p,hl)}</p>`:''}
       ${tr?`<p class="tr">${esc(tr)}</p>`:''}
       ${p.diciture?`<p>${esc(p.diciture)}</p>`:''}
     </div></div>

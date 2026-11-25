@@ -34,7 +34,7 @@ function sanitize(s){
   const keys=ALLERGENI.map(x=>x.k), pzIds=st.pezzature.map(z=>z.id), csIds=st.conservazioni.map(c=>c.id);
   s.prodotti=(Array.isArray(s.prodotti)?s.prodotti:[]).filter(p=>p&&SAFE_ID.test(p.id)).map(p=>({...p,
     nome:String(p.nome??''),sottotitolo:String(p.sottotitolo??''),ingredienti:String(p.ingredienti??''),tracceExtra:String(p.tracceExtra??''),diciture:String(p.diciture??''),
-    prezzoKg:String(p.prezzoKg??''),prezzoPezzo:String(p.prezzoPezzo??''),tipoPrezzo:p.tipoPrezzo==='pezzo'?'pezzo':'kg',linea:p.linea==='punta'?'punta':'standard',categoria:String(p.categoria??'').replace(/[^A-Za-z0-9_-]/g,''),fraseFronte:String(p.fraseFronte??''),giorni:Math.round(n(p.giorni,0,0,3650)),tipoData:p.tipoData==='tmc'?'tmc':'scadenza',
+    prezzoKg:String(p.prezzoKg??''),prezzoPezzo:String(p.prezzoPezzo??''),tipoPrezzo:p.tipoPrezzo==='pezzo'?'pezzo':'kg',linea:p.linea==='punta'?'punta':'standard',categoria:String(p.categoria??'').replace(/[^A-Za-z0-9_-]/g,''),fraseFronte:String(p.fraseFronte??''),stato:['decongelato','surgelato'].includes(p.stato)?p.stato:'',giorni:Math.round(n(p.giorni,0,0,3650)),tipoData:p.tipoData==='tmc'?'tmc':'scadenza',
     tracce:(Array.isArray(p.tracce)?p.tracce:[]).filter(k=>keys.includes(k)),
     pezzature:(Array.isArray(p.pezzature)?p.pezzature:[]).filter(k=>pzIds.includes(k)),
     conservazione:csIds.includes(p.conservazione)?p.conservazione:'',

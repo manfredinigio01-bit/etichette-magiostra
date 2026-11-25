@@ -28,6 +28,10 @@ function editorHTML(p){
     <div class="row"><label class="f">Sottotitolo<input value="${esc(p.sottotitolo)}" placeholder="es. con ragù di cavolfiore" data-h-input="27"></label></div>
     <div class="row"><label class="f">Ingredienti (in ordine di peso decrescente)<textarea data-h-input="28">${esc(p.ingredienti)}</textarea></label></div>
     <div id="alfound">${alFoundHTML(p.ingredienti)}</div>
+    <div id="surgbox">${surgBoxHTML(p)}</div>
+    <div class="row"><label class="f">Stato del prodotto<select data-h-change="102">${Object.entries({'':'Normale (fresco)','decongelato':'Decongelato (congelato e venduto scongelato)','surgelato':'Surgelato / congelato (venduto congelato)'}).map(([v,t])=>`<option value="${v}" ${(p.stato||'')===v?'selected':''}>${t}</option>`).join('')}</select></label></div>
+    ${p.stato==='surgelato'&&!(cons&&/18/.test(cons.testo))?`<div class="warn">Prodotto venduto congelato: scegli una dicitura di conservazione con −18 °C e "non ricongelare".</div>`:''}
+    ${p.stato==='decongelato'&&cons&&/18/.test(cons.testo)?`<div class="warn">Prodotto decongelato ma la conservazione dice −18 °C: scegli quella del frigorifero.</div>`:''}
     ${bio?`<div class="warn">Hai scritto "bio/biologico". Senza certificazione biologica di La Magiostra questo termine probabilmente non può comparire in etichetta: verifica con il tuo consulente HACCP/ente certificatore.</div>`:''}
     <h3>Tracce di allergeni (contaminazione crociata)</h3>
     <div style="display:flex;flex-wrap:wrap;gap:4px 14px">${ALLERGENI.map(a=>`<label class="chk"><input type="checkbox" ${p.tracce?.includes(a.k)?'checked':''} data-h-change="29" data-change0="${a.k}"> ${a.n}</label>`).join('')}</div>
@@ -62,6 +66,14 @@ function editorHTML(p){
   </div>
   <div class="card"><h2>Anteprima</h2><div class="prevwrap" id="edprev" data-fit style="gap:12px">${scaledEditPreview(job)}</div></div>`;
 }
+function surgBoxHTML(p){
+  const P=ingParts(p.ingredienti); if(!P.length) return '';
+  const hl=highlight(p.ingredienti);
+  return `<div class="muted" style="margin:4px 0 2px">Ingredienti surgelati (spunta per mettere l'asterisco; la nota "*Ingrediente surgelato." si aggiunge da sola):</div>
+    <div style="display:flex;flex-wrap:wrap;gap:2px 12px;margin-bottom:6px">${P.map((x,k)=>`<label class="chk"><input type="checkbox" ${x.surg?'checked':''} data-h-change="101" data-change0="${k}"> ${esc(x.nome)}</label>`).join('')}</div>
+    ${/surgelat/i.test(p.diciture||'')&&!hl.surg?`<div class="warn">Le diciture parlano di ingrediente surgelato ma nessun ingrediente ha l'asterisco: spunta quello surgelato.</div>`:''}
+    ${/semilavorat/i.test(p.ingredienti)?`<div class="warn">C'è scritto "semilavorato": in etichetta il semilavorato va scritto con i suoi ingredienti tra parentesi, es. maionese vegana (bevanda di soia, olio di semi di girasole, aceto di mele, sale).</div>`:''}`;
+}
 function alFoundHTML(text){
   const hl=highlight(text);
   const al=hl.found.filter(k=>!k.startsWith('manuale')).map(k=>ALLERGENI.find(a=>a.k===k).n);
@@ -80,7 +92,8 @@ function togglePz(k,on){ EDIT.pezzature=(EDIT.pezzature||[]).filter(x=>x!==k); i
 function setCons(id){ EDIT.conservazione=id; const c=getCons(id); if(c) EDIT.tipoData=c.tipoData; render(); }
 function saveProduct(){
   if(!EDIT.nome.trim()){ alert('Inserisci il nome del prodotto'); return; }
-  const p={...EDIT}; delete p._new; p.updatedAt=Math.max(now(),(getP(p.id)?.updatedAt||0)+1); // sempre più recente della versione modificata, anche se l'orologio del PC è indietro p.updatedBy=DEV.nome||'postazione senza nome';
+  const p={...EDIT}; delete p._new; p.updatedAt=Math.max(now(),(getP(p.id)?.updatedAt||0)+1); // sempre più recente della versione modificata, anche se l'orologio del PC è indietro
+  p.updatedBy=DEV.nome||'postazione senza nome';
   const i=S.prodotti.findIndex(x=>x.id===p.id); if(i>=0) S.prodotti[i]=p; else S.prodotti.push(p);
   EDIT=JSON.parse(JSON.stringify(p)); commit(); render();
 }
