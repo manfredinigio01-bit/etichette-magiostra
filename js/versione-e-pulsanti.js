@@ -6,7 +6,7 @@ if(PROVA){ // versione di prova: ben riconoscibile, non installabile come app
 }
 var STORAGE_PERSIST=null; // il browser conserva i dati dell'app? (chiesto all'avvio)
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persisted().then(ok=>ok||navigator.storage.persist()).then(ok=>{ STORAGE_PERSIST=!!ok; }).catch(()=>{}); }catch(e){}
-const APP_VERSION='0.8.2';
+const APP_VERSION='0.8.3';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');

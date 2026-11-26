@@ -20,6 +20,10 @@ label.f.s{flex:0 0 110px;min-width:90px}
 input,select,textarea{font:inherit;padding:7px 9px;border:1px solid var(--bordo);border-radius:7px;background:#fff;color:var(--testo)}
 textarea{min-height:110px;resize:vertical;line-height:1.4}
 input:focus,select:focus,textarea:focus{outline:2px solid #9bb38c;border-color:#9bb38c}
+:focus-visible{outline:3px solid #2f6fb3;outline-offset:2px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #2f6fb3;border-color:#2f6fb3}
+.edbar{position:sticky;top:var(--hdr,56px);z-index:4;background:var(--card);padding:6px 0;margin-top:-6px}
+@media (max-width:880px){ .grid2{grid-template-columns:minmax(0,1fr)} .card:has(.edbar){overflow:visible} }
 .b{display:inline-block;font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--bordo);background:#fff;cursor:pointer}
 .b:hover{background:#f0efe8}
 button.p{background:var(--verde);border-color:var(--verde);color:#fff}
@@ -34,6 +38,7 @@ button.sm{padding:4px 9px;font-size:12px}
 .plist div.it{padding:7px 10px;border-bottom:1px solid #eeece5;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
 .plist div.it:hover{background:#f3f6f0}
 .plist div.it.on{background:#e3ecdc}
+.plist div.it.on .muted{color:#4f5248}
 .tag{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:10px;background:#eef0e8;color:#4c5245;margin:1px}
 .tag.a{background:#fbe5cf;color:#7a4510}
 table.q{width:100%;border-collapse:collapse;font-size:13px}

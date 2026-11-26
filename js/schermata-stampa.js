@@ -16,7 +16,11 @@ function afterRender(){
   const fw=document.getElementById('fitwarn');
   if(fw && document.querySelector('.prevwrap .lbl.overflow')) fw.innerHTML=`<div class="err">Con il formato attuale (${S.settings.etichetta.w}×${S.settings.etichetta.h} mm) questo prodotto non entra a norma di legge (carattere minimo 7 pt): la stampa è bloccata. Scegli un formato più grande in Impostazioni o accorcia il testo.</div>`;
   if(TAB==='prodotti') markNonFit();
+  // tastiera: le voci cliccabili che non sono pulsanti si raggiungono con Tab e si aprono con Invio
+  document.querySelectorAll('#main [data-h-click]:not(button):not(input):not(select):not(a):not(label)').forEach(e=>{ if(!e.hasAttribute('tabindex')){ e.tabIndex=0; e.setAttribute('role','button'); } });
+  if(typeof hdrH==='function') hdrH();
 }
+document.addEventListener('keydown',e=>{ const t=e.target; if((e.key==='Enter'||e.key===' ')&&t.matches&&t.matches('[role=button][tabindex][data-h-click]')){ e.preventDefault(); t.click(); } });
 function prodJob(p,price){
   const z=getPz((p.pezzature&&p.pezzature[0]))||S.settings.pezzature[0]||{};
   const kg=z.kg??0.25;

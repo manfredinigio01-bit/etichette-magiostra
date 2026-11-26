@@ -5,14 +5,16 @@ function viewProdotti(){
   return `<div class="grid2">
    <div class="card"><div class="flexsp"><h2>Prodotti (${prodotti().length}) <span class="muted" id="nfcount" style="font-weight:400;color:#b3261e"></span></h2><button class="b p sm" data-h-click="19">+ Nuovo prodotto</button></div>
     <input placeholder="Cerca per nome o ingrediente…" value="${esc(Q)}" data-h-input="20" id="qb2" style="width:100%;margin:6px 0 8px">
-    <div class="plist" style="max-height:640px">${ps.map(x=>{const al=highlight(x.ingredienti).found.filter(k=>!k.startsWith('manuale'));return `<div class="it ${EDIT&&EDIT.id===x.id?'on':''}" data-id="${x.id}" data-h-click="21" data-click0="${x.id}"><span><b>${esc(x.nome)}</b> ${x.linea==='punta'?`<span class="tag" style="background:${getCat(x.categoria).colore};color:#fff">${esc(getCat(x.categoria).nome)}</span>`:''} ${x.fonte==='cucina'?'<span class="tag" style="background:#e6f0e3;color:#2e6b2e">da Cucina</span> ':''}<span class="tag nf hidden" style="background:#fdecea;color:#7a1712">non entra</span> <span class="muted">${esc(x.sottotitolo||'')}</span><br>${al.map(k=>`<span class="tag a">${ALLERGENI.find(a=>a.k===k).n}</span>`).join('')}</span><span class="muted" style="white-space:nowrap">${x.giorni||0} gg${prezzoInfo(x)?'<br>'+prezzoInfo(x):''}</span></div>`}).join('')||'<div class="it muted">Nessun prodotto</div>'}</div>
+    <div class="plist" style="max-height:640px">${ps.map(x=>{const al=highlight(x.ingredienti).found.filter(k=>!k.startsWith('manuale'));return `<div class="it ${EDIT&&EDIT.id===x.id?'on':''}" data-id="${x.id}" data-h-click="21" data-click0="${x.id}"><span><b>${esc(x.nome)}</b> ${x.linea==='punta'?`<span class="tag" style="background:${getCat(x.categoria).colore};color:${testoSu(getCat(x.categoria).colore)}">${esc(getCat(x.categoria).nome)}</span>`:''} ${x.fonte==='cucina'?'<span class="tag" style="background:#e6f0e3;color:#2e6b2e">da Cucina</span> ':''}<span class="tag nf hidden" style="background:#fdecea;color:#7a1712">non entra</span> <span class="muted">${esc(x.sottotitolo||'')}</span><br>${al.map(k=>`<span class="tag a">${ALLERGENI.find(a=>a.k===k).n}</span>`).join('')}</span><span class="muted" style="white-space:nowrap">${x.giorni||0} gg${prezzoInfo(x)?'<br>'+prezzoInfo(x):''}</span></div>`}).join('')||'<div class="it muted">Nessun prodotto</div>'}</div>
    </div>
    <div>${p?editorHTML(p):'<div class="card muted">Seleziona un prodotto a sinistra o creane uno nuovo.</div>'}</div>
   </div>`;
 }
 function newProduct(){ EDIT={id:uid(),nome:'',sottotitolo:'',ingredienti:'',tracce:[],tracceExtra:'',conservazione:S.settings.conservazioni[0]?.id,diciture:'',tipoData:'scadenza',giorni:3,prezzoKg:'',prezzoPezzo:'',tipoPrezzo:'kg',pezzature:[],mostraPrezzo:false,_new:true}; render(); scrollEditor(); }
 function editProduct(id){ EDIT=JSON.parse(JSON.stringify(getP(id))); render(); scrollEditor(); }
-function scrollEditor(){ if(innerWidth>760) return; const h=[...document.querySelectorAll('.card h2')].find(x=>/^(Modifica|Nuovo) prodotto/.test(x.textContent)); if(h) h.closest('.card').scrollIntoView({behavior:'smooth',block:'start'}); }
+function hdrH(){ const h=document.querySelector('header.app'); const v=h?h.offsetHeight:0; document.documentElement.style.setProperty('--hdr',Math.max(0,Math.round(v))+'px'); return v; }
+addEventListener('resize',hdrH);
+function scrollEditor(){ if(innerWidth>880) return; const h=[...document.querySelectorAll('.card h2')].find(x=>/^(Modifica|Nuovo) prodotto/.test(x.textContent)); if(!h) return; const top=h.closest('.card').getBoundingClientRect().top+scrollY-hdrH()-8; scrollTo({top,behavior:'smooth'}); }
 function ed(k,v,re){ EDIT[k]=v; if(k==='linea'&&v==='punta'&&!EDIT.categoria) EDIT.categoria=S.settings.categorie[0]?.id||''; if(re) render(); else refreshEditorPreview(); }
 function editorHTML(p){
   const hl=highlight(p.ingredienti);
@@ -21,7 +23,7 @@ function editorHTML(p){
   const cons=getCons(p.conservazione);
   const bio=/(?<!\p{L})bio(logic[oaie])?(?!\p{L})/iu.test(p.nome+' '+p.sottotitolo+' '+p.ingredienti);
   const job={pid:'__edit',kg:(getPz(p.pezzature?.[0])||S.settings.pezzature[0]||{}).kg??null,prod:isoToday(),scad:addDays(isoToday(),p.giorni||0),lotto:lotto(isoToday()),prezzo:'',showPrice:false};
-  return `<div class="card"><div class="flexsp"><h2>${p._new?'Nuovo prodotto':'Modifica prodotto'}</h2>
+  return `<div class="card"><div class="flexsp edbar"><h2>${p._new?'Nuovo prodotto':'Modifica prodotto'}</h2>
     <div><button class="b p" data-h-click="22">Salva</button> ${!p._new?`<button class="b" data-h-click="23">Duplica</button> <button class="b d" data-h-click="24">Elimina</button>`:''} <button class="b" data-h-click="25">Chiudi</button></div></div>
     ${p.updatedAt&&!p._new?`<div class="muted" style="margin-bottom:8px">Ultima modifica: ${new Date(p.updatedAt).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})} · ${esc(p.updatedBy||'—')}</div>`:''}
     <div class="row"><label class="f">Nome (in grande)<input value="${esc(p.nome)}" data-h-input="26"></label></div>

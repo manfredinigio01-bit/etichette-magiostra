@@ -65,7 +65,7 @@ function viewImpostazioni(){
   </div>
   <div class="card"><h2>Categorie della linea di punta</h2>
 
-    <table class="q">${st.categorie.map((c,i)=>`<tr><td><input value="${esc(c.nome)}" data-h-change="77" data-change0="${i}"></td><td><input type="color" value="${c.colore}" data-h-change="78" data-change0="${i}" style="width:48px;padding:2px;height:32px"></td><td><span class="tag" style="background:${c.colore};color:#fff">${esc(c.nome)}</span></td><td><button class="b sm d" data-h-click="79" data-click0="${i}">✕</button></td></tr>`).join('')}</table>
+    <table class="q">${st.categorie.map((c,i)=>`<tr><td><input value="${esc(c.nome)}" data-h-change="77" data-change0="${i}"></td><td><input type="color" value="${c.colore}" data-h-change="78" data-change0="${i}" style="width:48px;padding:2px;height:32px"></td><td><span class="tag" style="background:${c.colore};color:${testoSu(c.colore)}">${esc(c.nome)}</span></td><td><button class="b sm d" data-h-click="79" data-click0="${i}">✕</button></td></tr>`).join('')}</table>
     <button class="b sm" style="margin-top:8px" data-h-click="80">+ Aggiungi categoria</button>
     <div class="muted" style="margin-top:6px">Il colore compare sul fronte (nome e fascia) e sui dettagli del retro. Stampato a laser il colore sarà diverso da quello a schermo: fai una prova.</div>
   </div>
