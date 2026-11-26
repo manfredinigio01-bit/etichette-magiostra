@@ -91,7 +91,7 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - `merge`: il prodotto vince per `updatedAt`, ma il blocco {ingredienti, fonte, ricetta, ingAt} segue l'`ingAt` più alto: un PC rimasto indietro che cambia il prezzo non riporta indietro il testo scritto dalla Cucina. `saveProduct` alza `ingAt` se cambiano testo o fonte.
 - Avvio: `navigator.storage.persist()`; nella scheda di collegamento all'archivio, aiuto per i PC che perdono i dati alla chiusura (Edge/Chrome che cancellano i dati dei siti, profilo temporaneo, InPrivate).
 
-## Interfaccia (PROVA 0.8.3, 26/11/2026, dopo revisione UI)
+## Interfaccia (0.8.3, 26/11/2026, dopo revisione UI; promossa il 26/11 con la Cucina 1.5.4)
 - Editor: barra dei pulsanti `.edbar` fissa sotto l'intestazione (`--hdr` = altezza dell'intestazione, `hdrH()`); `scrollEditor()` tiene conto dell'intestazione (prima Salva finiva sotto). Sotto 880 px `.card:has(.edbar){overflow:visible}`.
 - Sotto 880 px una sola colonna (`.grid2` aveva minmax(380px) ×2 = 28 px di scorrimento laterale a 768).
 - `testoSu(colore)`: testo nero o bianco sulle categorie in base al contrasto (elenco e impostazioni).
