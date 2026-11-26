@@ -1,7 +1,11 @@
 /* ================== ARCHIVIO CONDIVISO ================== */
 function merge(a,b){
   const out={version:1,settings:(b.settings&&(b.settings.updatedAt||0)>=(a.settings?.updatedAt||0))?b.settings:a.settings /* a parità vince l'archivio (b) */,prodotti:[]};
-  const m=new Map(); [...(a.prodotti||[]),...(b.prodotti||[])].forEach(p=>{ const o=m.get(p.id); if(!o||(p.updatedAt||0)>(o.updatedAt||0)) m.set(p.id,p); });
+  const m=new Map(); [...(a.prodotti||[]),...(b.prodotti||[])].forEach(p=>{ const o=m.get(p.id);
+    if(!o){ m.set(p.id,p); return; }
+    const w=(p.updatedAt||0)>(o.updatedAt||0)?p:o, l=w===p?o:p;
+    // il testo ingredienti segue chi l'ha cambiato per ultimo (ingAt): così un PC rimasto indietro che cambia il prezzo non riporta il testo vecchio scritto dalla Cucina
+    m.set(p.id,(l.ingAt||0)>(w.ingAt||0)?{...w,ingredienti:l.ingredienti,fonte:l.fonte,ricetta:l.ricetta,ingAt:l.ingAt}:w); });
   out.prodotti=[...m.values()]; return normalize(out);
 }
 function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(PFX+'mag_etichette',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=rej; }); }

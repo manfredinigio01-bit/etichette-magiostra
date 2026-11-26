@@ -84,3 +84,9 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - Prodotto `stato`: '' | 'decongelato' | 'surgelato' (handler 102) → riga "PRODOTTO DECONGELATO / SURGELATO" sotto il nome (anche sul fronte della linea di punta). Reg. UE 1169/2011 all. VI parte A punto 2: "decongelato" obbligatorio per alimenti congelati e venduti scongelati; NON obbligatorio per gli ingredienti (l'asterisco è facoltativo ma corretto). Avvisi sulla conservazione (−18 °C).
 - Corretto: `updatedBy` non veniva salvato (era finito dentro un commento in `saveProduct`).
 - Impronta invariata e 87 prodotti veri identici: le novità compaiono solo se usate.
+
+## Testo dalla Cucina (PROVA 0.8.2, 26/11/2026)
+- Campi prodotto `fonte` ('cucina'|''), `ricetta` (id ricetta), `ingAt` (momento dell'ultima modifica del testo ingredienti). In `sanitize`.
+- `fonte:'cucina'`: textarea ingredienti in sola lettura, caselle surgelati nascoste (si segnano nella Cucina), etichetta "da Cucina" in elenco, pulsante "Modifica a mano (sgancia dalla Cucina)" (handler 103 → `fonte:''`).
+- `merge`: il prodotto vince per `updatedAt`, ma il blocco {ingredienti, fonte, ricetta, ingAt} segue l'`ingAt` più alto: un PC rimasto indietro che cambia il prezzo non riporta indietro il testo scritto dalla Cucina. `saveProduct` alza `ingAt` se cambiano testo o fonte.
+- Avvio: `navigator.storage.persist()`; nella scheda di collegamento all'archivio, aiuto per i PC che perdono i dati alla chiusura (Edge/Chrome che cancellano i dati dei siti, profilo temporaneo, InPrivate).
