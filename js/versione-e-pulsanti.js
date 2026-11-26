@@ -4,7 +4,9 @@ if(PROVA){ // versione di prova: ben riconoscibile, non installabile come app
   document.querySelector('link[rel="manifest"]')?.remove();
   document.body.insertAdjacentHTML('afterbegin','<div id="provabar" style="background:#ffd54a;color:#3a2a00;padding:6px 20px;font-weight:600;font-size:13px;text-align:center">VERSIONE DI PROVA — dati separati da quelli veri; l\'archivio online si legge ma non si modifica. Per il lavoro vero usa la versione normale.</div>');
 }
-const APP_VERSION='0.8.1';
+var STORAGE_PERSIST=null; // il browser conserva i dati dell'app? (chiesto all'avvio)
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persisted().then(ok=>ok||navigator.storage.persist()).then(ok=>{ STORAGE_PERSIST=!!ok; }).catch(()=>{}); }catch(e){}
+const APP_VERSION='0.8.2';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
@@ -117,6 +119,7 @@ const HANDLERS={
   98:(el,ev)=>{ ghProtect('ghPwNew1','ghPwNew2') },
   99:(el,ev)=>{ ghUnlock('ghPwCard') },
   100:(el,ev)=>{ ghLock() },
+  103:(el,ev)=>{ if(confirm('Da adesso il testo ingredienti di questo prodotto lo scrivi tu e la Cucina non lo aggiornerà più. Continuare?')){ EDIT.fonte=''; render(); } },
   101:(el,ev)=>{ toggleSurg(+el.dataset.change0) },
   102:(el,ev)=>{ ed('stato',el.value,true) }
 };

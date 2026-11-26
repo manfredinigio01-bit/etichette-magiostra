@@ -5,7 +5,7 @@ function viewProdotti(){
   return `<div class="grid2">
    <div class="card"><div class="flexsp"><h2>Prodotti (${prodotti().length}) <span class="muted" id="nfcount" style="font-weight:400;color:#b3261e"></span></h2><button class="b p sm" data-h-click="19">+ Nuovo prodotto</button></div>
     <input placeholder="Cerca per nome o ingrediente…" value="${esc(Q)}" data-h-input="20" id="qb2" style="width:100%;margin:6px 0 8px">
-    <div class="plist" style="max-height:640px">${ps.map(x=>{const al=highlight(x.ingredienti).found.filter(k=>!k.startsWith('manuale'));return `<div class="it ${EDIT&&EDIT.id===x.id?'on':''}" data-id="${x.id}" data-h-click="21" data-click0="${x.id}"><span><b>${esc(x.nome)}</b> ${x.linea==='punta'?`<span class="tag" style="background:${getCat(x.categoria).colore};color:#fff">${esc(getCat(x.categoria).nome)}</span>`:''} <span class="tag nf hidden" style="background:#fdecea;color:#7a1712">non entra</span> <span class="muted">${esc(x.sottotitolo||'')}</span><br>${al.map(k=>`<span class="tag a">${ALLERGENI.find(a=>a.k===k).n}</span>`).join('')}</span><span class="muted" style="white-space:nowrap">${x.giorni||0} gg${prezzoInfo(x)?'<br>'+prezzoInfo(x):''}</span></div>`}).join('')||'<div class="it muted">Nessun prodotto</div>'}</div>
+    <div class="plist" style="max-height:640px">${ps.map(x=>{const al=highlight(x.ingredienti).found.filter(k=>!k.startsWith('manuale'));return `<div class="it ${EDIT&&EDIT.id===x.id?'on':''}" data-id="${x.id}" data-h-click="21" data-click0="${x.id}"><span><b>${esc(x.nome)}</b> ${x.linea==='punta'?`<span class="tag" style="background:${getCat(x.categoria).colore};color:#fff">${esc(getCat(x.categoria).nome)}</span>`:''} ${x.fonte==='cucina'?'<span class="tag" style="background:#e6f0e3;color:#2e6b2e">da Cucina</span> ':''}<span class="tag nf hidden" style="background:#fdecea;color:#7a1712">non entra</span> <span class="muted">${esc(x.sottotitolo||'')}</span><br>${al.map(k=>`<span class="tag a">${ALLERGENI.find(a=>a.k===k).n}</span>`).join('')}</span><span class="muted" style="white-space:nowrap">${x.giorni||0} gg${prezzoInfo(x)?'<br>'+prezzoInfo(x):''}</span></div>`}).join('')||'<div class="it muted">Nessun prodotto</div>'}</div>
    </div>
    <div>${p?editorHTML(p):'<div class="card muted">Seleziona un prodotto a sinistra o creane uno nuovo.</div>'}</div>
   </div>`;
@@ -26,7 +26,9 @@ function editorHTML(p){
     ${p.updatedAt&&!p._new?`<div class="muted" style="margin-bottom:8px">Ultima modifica: ${new Date(p.updatedAt).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})} · ${esc(p.updatedBy||'—')}</div>`:''}
     <div class="row"><label class="f">Nome (in grande)<input value="${esc(p.nome)}" data-h-input="26"></label></div>
     <div class="row"><label class="f">Sottotitolo<input value="${esc(p.sottotitolo)}" placeholder="es. con ragù di cavolfiore" data-h-input="27"></label></div>
-    <div class="row"><label class="f">Ingredienti (in ordine di peso decrescente)<textarea data-h-input="28">${esc(p.ingredienti)}</textarea></label></div>
+    ${p.fonte==='cucina'?`<div class="row"><label class="f">Ingredienti (scritti dall'app Cucina)<textarea readonly style="background:#f3f6f1">${esc(p.ingredienti)}</textarea></label></div>
+    <div class="ok" style="color:#2e6b2e;margin:2px 0 6px">🔗 Questo testo lo scrive l'app Cucina e si aggiorna da solo quando cambi la ricetta o i suoi ingredienti. Per cambiarlo modifica la ricetta nella Cucina. <button class="b sm" data-h-click="103">Modifica a mano (sgancia dalla Cucina)</button></div>`
+    :`<div class="row"><label class="f">Ingredienti (in ordine di peso decrescente)<textarea data-h-input="28">${esc(p.ingredienti)}</textarea></label></div>`}
     <div id="alfound">${alFoundHTML(p.ingredienti)}</div>
     <div id="surgbox">${surgBoxHTML(p)}</div>
     <div class="row"><label class="f">Stato del prodotto<select data-h-change="102">${Object.entries({'':'Normale (fresco)','decongelato':'Decongelato (congelato e venduto scongelato)','surgelato':'Surgelato / congelato (venduto congelato)'}).map(([v,t])=>`<option value="${v}" ${(p.stato||'')===v?'selected':''}>${t}</option>`).join('')}</select></label></div>
@@ -69,6 +71,7 @@ function editorHTML(p){
 function surgBoxHTML(p){
   const P=ingParts(p.ingredienti); if(!P.length) return '';
   const hl=highlight(p.ingredienti);
+  if(p.fonte==='cucina') return `<div class="muted" style="margin:4px 0 6px">Ingredienti surgelati: si segnano nella Cucina (scheda dell'ingrediente, casella "Surgelato").${hl.surg?' La nota "*Ingrediente surgelato." si aggiunge da sola.':''}</div>`;
   return `<div class="muted" style="margin:4px 0 2px">Ingredienti surgelati (spunta per mettere l'asterisco; la nota "*Ingrediente surgelato." si aggiunge da sola):</div>
     <div style="display:flex;flex-wrap:wrap;gap:2px 12px;margin-bottom:6px">${P.map((x,k)=>`<label class="chk"><input type="checkbox" ${x.surg?'checked':''} data-h-change="101" data-change0="${k}"> ${esc(x.nome)}</label>`).join('')}</div>
     ${/surgelat/i.test(p.diciture||'')&&!hl.surg?`<div class="warn">Le diciture parlano di ingrediente surgelato ma nessun ingrediente ha l'asterisco: spunta quello surgelato.</div>`:''}
@@ -94,6 +97,7 @@ function saveProduct(){
   if(!EDIT.nome.trim()){ alert('Inserisci il nome del prodotto'); return; }
   const p={...EDIT}; delete p._new; p.updatedAt=Math.max(now(),(getP(p.id)?.updatedAt||0)+1); // sempre più recente della versione modificata, anche se l'orologio del PC è indietro
   p.updatedBy=DEV.nome||'postazione senza nome';
+  { const old=getP(p.id); if(!old||old.ingredienti!==p.ingredienti||(old.fonte||'')!==(p.fonte||'')) p.ingAt=p.updatedAt; }
   const i=S.prodotti.findIndex(x=>x.id===p.id); if(i>=0) S.prodotti[i]=p; else S.prodotti.push(p);
   EDIT=JSON.parse(JSON.stringify(p)); commit(); render();
 }

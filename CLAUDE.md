@@ -85,7 +85,7 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - Corretto: `updatedBy` non veniva salvato (era finito dentro un commento in `saveProduct`).
 - Impronta invariata e 87 prodotti veri identici: le novità compaiono solo se usate.
 
-## Testo dalla Cucina (PROVA 0.8.2, 26/11/2026)
+## Testo dalla Cucina (0.8.2, 26/11/2026, promossa con la Cucina 1.5.2)
 - Campi prodotto `fonte` ('cucina'|''), `ricetta` (id ricetta), `ingAt` (momento dell'ultima modifica del testo ingredienti). In `sanitize`.
 - `fonte:'cucina'`: textarea ingredienti in sola lettura, caselle surgelati nascoste (si segnano nella Cucina), etichetta "da Cucina" in elenco, pulsante "Modifica a mano (sgancia dalla Cucina)" (handler 103 → `fonte:''`).
 - `merge`: il prodotto vince per `updatedAt`, ma il blocco {ingredienti, fonte, ricetta, ingAt} segue l'`ingAt` più alto: un PC rimasto indietro che cambia il prezzo non riporta indietro il testo scritto dalla Cucina. `saveProduct` alza `ingAt` se cambiano testo o fonte.
