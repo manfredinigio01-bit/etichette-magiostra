@@ -68,6 +68,7 @@ function toggleSurg(k){
   EDIT.ingredienti = x.surg ? t.slice(0,x.e-1)+t.slice(x.e) : t.slice(0,x.e)+'*'+t.slice(x.e);
   render();
 }
+function testoSu(hex){ const m=/^#?([0-9a-f]{6})$/i.exec(hex||''); if(!m) return '#fff'; const v=[0,2,4].map(i=>{ let c=parseInt(m[1].slice(i,i+2),16)/255; return c<=.03928?c/12.92:((c+.055)/1.055)**2.4; }); const L=.2126*v[0]+.7152*v[1]+.0722*v[2]; return (1.05/(L+.05))>=4.5?'#fff':'#1d1f19'; }
 const STATI={'':'','decongelato':'Prodotto decongelato','surgelato':'Prodotto surgelato'};
 const noteSurg=(p,hl)=>hl.surg&&!/surgelat|congelat/i.test(p.diciture||'')?'*Ingrediente surgelato.':'';
 

@@ -90,3 +90,9 @@ App PWA per creare e stampare le etichette alimentari di La Magiostra (gastronom
 - `fonte:'cucina'`: textarea ingredienti in sola lettura, caselle surgelati nascoste (si segnano nella Cucina), etichetta "da Cucina" in elenco, pulsante "Modifica a mano (sgancia dalla Cucina)" (handler 103 → `fonte:''`).
 - `merge`: il prodotto vince per `updatedAt`, ma il blocco {ingredienti, fonte, ricetta, ingAt} segue l'`ingAt` più alto: un PC rimasto indietro che cambia il prezzo non riporta indietro il testo scritto dalla Cucina. `saveProduct` alza `ingAt` se cambiano testo o fonte.
 - Avvio: `navigator.storage.persist()`; nella scheda di collegamento all'archivio, aiuto per i PC che perdono i dati alla chiusura (Edge/Chrome che cancellano i dati dei siti, profilo temporaneo, InPrivate).
+
+## Interfaccia (PROVA 0.8.3, 26/11/2026, dopo revisione UI)
+- Editor: barra dei pulsanti `.edbar` fissa sotto l'intestazione (`--hdr` = altezza dell'intestazione, `hdrH()`); `scrollEditor()` tiene conto dell'intestazione (prima Salva finiva sotto). Sotto 880 px `.card:has(.edbar){overflow:visible}`.
+- Sotto 880 px una sola colonna (`.grid2` aveva minmax(380px) ×2 = 28 px di scorrimento laterale a 768).
+- `testoSu(colore)`: testo nero o bianco sulle categorie in base al contrasto (elenco e impostazioni).
+- Tastiera: `:focus-visible` blu; voci con data-h-click non-pulsante → tabindex+role=button, Invio/Spazio le apre.
