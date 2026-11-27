@@ -142,3 +142,11 @@ table.q td,table.q th{padding:6px;border-bottom:1px solid #eeece5;text-align:lef
   .lbl.toosmall::after,.lbl.overflow::after{display:none}
   .calib-note{display:block}
 }
+
+/* PIN del negozio (v0.9.0) */
+#pinbox{position:fixed;inset:0;z-index:50;background:rgba(40,45,35,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+#pinbox .pincard{background:#fff;border-radius:14px;padding:24px 22px;width:100%;max-width:360px;box-shadow:0 10px 40px rgba(0,0,0,.25);text-align:center}
+#pinbox h2{margin:4px 0 6px}
+.pinin{font-size:18px;letter-spacing:.3em;text-align:center;width:9em}
+.pinin.grande{font-size:28px;width:100%;padding:10px;margin:10px 0 4px;box-sizing:border-box}
+.pinmsg{min-height:1.4em;color:var(--rosso);font-size:14px;margin-top:4px}

@@ -25,6 +25,7 @@ async function reconnectFile(){ if(!fileHandle) return; const p=await fileHandle
 function setStatus(t,err){ const s=document.getElementById('syncStatus'); s.textContent=t; s.classList.toggle('err',!!err); }
 let syncing=false;
 async function syncNow(force){
+  if(srvOn()) return syncSrv(); // archivio tramite il server delle Etichette (PIN)
   if(GHCFG) return syncGH(); // archivio online configurato: mai il vecchio metodo file, anche se bloccato
   if(PROVA||!fileHandle||syncing) return; syncing=true;
   try{

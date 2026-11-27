@@ -4,7 +4,8 @@ function render(){
   document.getElementById('hdrLogo').src=LOGO_SCRITTA;
   const m=document.getElementById('main');
   const y=scrollY, keep=render.newTab?[]:[...m.querySelectorAll('.plist,.scroll')].map(e=>e.scrollTop); render.newTab=false; // le liste restano dove eri
-  if(TAB==='stampa') m.innerHTML=viewStampa();
+  if(TAB!=='stampa'&&typeof soloStampa==='function'&&soloStampa()){ EDIT=null; m.innerHTML=viewPinCard(); }
+  else if(TAB==='stampa') m.innerHTML=viewStampa();
   else if(TAB==='prodotti') m.innerHTML=viewProdotti();
   else m.innerHTML=viewImpostazioni();
   m.querySelectorAll('.plist,.scroll').forEach((e,k)=>{ if(keep[k]!=null) e.scrollTop=keep[k]; });

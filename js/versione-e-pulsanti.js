@@ -6,7 +6,7 @@ if(PROVA){ // versione di prova: ben riconoscibile, non installabile come app
 }
 var STORAGE_PERSIST=null; // il browser conserva i dati dell'app? (chiesto all'avvio)
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persisted().then(ok=>ok||navigator.storage.persist()).then(ok=>{ STORAGE_PERSIST=!!ok; }).catch(()=>{}); }catch(e){}
-const APP_VERSION='0.8.3';
+const APP_VERSION='0.9.0';
 document.getElementById('ver').textContent='v'+APP_VERSION;
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js');
@@ -121,7 +121,13 @@ const HANDLERS={
   100:(el,ev)=>{ ghLock() },
   103:(el,ev)=>{ if(confirm('Da adesso il testo ingredienti di questo prodotto lo scrivi tu e la Cucina non lo aggiornerà più. Continuare?')){ EDIT.fonte=''; render(); } },
   101:(el,ev)=>{ toggleSurg(+el.dataset.change0) },
-  102:(el,ev)=>{ ed('stato',el.value,true) }
+  102:(el,ev)=>{ ed('stato',el.value,true) },
+  104:(el,ev)=>{ srvSblocca('pinIn') },
+  105:(el,ev)=>{ srvSoloStampa() },
+  106:(el,ev)=>{ srvSblocca('pinCard') },
+  107:(el,ev)=>{ srvSblocca('pinBar') },
+  108:(el,ev)=>{ syncSrv() },
+  109:(el,ev)=>{ srvBlocca() }
 };
 ['click','change','input'].forEach(t=>document.addEventListener(t,ev=>{
   let el=ev.target.closest&&ev.target.closest('[data-h-'+t+']');
