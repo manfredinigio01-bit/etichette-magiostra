@@ -156,14 +156,14 @@ async function ghConnect(){
 }
 function ghDisconnect(){ if(!confirm('Scollegare l\'archivio online da questo computer? I dati restano online e in questo browser.')) return; GH=null; GHCFG=null; localStorage.removeItem(PFX+'mag_gh'); ghOk(); updGhBar(); setStatus('Archivio: solo su questo computer'); render(); }
 
-/* ================== ARCHIVIO TRAMITE IL SITO, CON PIN (v0.9.0) ================== */
-// La chiave GitHub sta solo sul server del sito (Cloudflare, www.lamagiostra.it/api/etichette): nessun PC la conserva più.
+/* ================== ARCHIVIO TRAMITE IL SERVER DELLE ETICHETTE, CON PIN (v0.9.0) ================== */
+// La chiave GitHub sta solo sul server delle Etichette (Cloudflare, progetto separato dal sito, etichette.lamagiostra.it; codice in server/): nessun PC la conserva più.
 // All'apertura si inserisce il PIN del negozio (controllato dal server, 5 tentativi al minuto); il server restituisce un "pass"
 // firmato che vale fino a sera (sessionStorage: sparisce quando si chiude l'app). Senza PIN: "solo stampa" con i prodotti
 // già scaricati su questo computer. Se il server non è configurato (risponde 503) l'app funziona come prima (chiave per PC).
-const SRV_API='https://www.lamagiostra.it/api/etichette';
+const SRV_API='https://etichette.lamagiostra.it';
 const SRV_PASS_OK=/^[A-Za-z0-9_-]{10,200}\.[A-Za-z0-9_-]{43}$/;
-let SRV=localStorage.getItem(PFX+'eti_srv')==='1'?true:null; // true = archivio tramite il sito; null = da verificare; false = non attivo
+let SRV=localStorage.getItem(PFX+'eti_srv')==='1'?true:null; // true = archivio tramite il server delle Etichette; null = da verificare; false = non attivo
 let PASS=null;
 try{ const x=JSON.parse(sessionStorage.getItem(PFX+'eti_pass')||'null'); if(x&&SRV_PASS_OK.test(String(x.pass))&&Number.isFinite(x.scade)) PASS=x; }catch(e){}
 let srvSyncing=false, srvPending=false, srvBusy=false;
@@ -176,7 +176,7 @@ function srvFetch(method,path,body){
 function srvSetPass(p){ PASS=p; if(p) sessionStorage.setItem(PFX+'eti_pass',JSON.stringify(p)); else sessionStorage.removeItem(PFX+'eti_pass'); }
 function srvAttivo(){ SRV=true; localStorage.setItem(PFX+'eti_srv','1'); }
 function srvOra(t){ return new Date(t).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); }
-// Ti dice se il server del sito gestisce l'archivio (401 = sì, serve il PIN; 503 = non ancora configurato).
+// Ti dice se il server delle Etichette gestisce l'archivio (401 = sì, serve il PIN; 503 = non ancora configurato).
 async function srvProva(){
   try{ const r=await srvFetch('GET','/archivio'); if(r.status===401||r.ok){ srvAttivo(); return true; } if(r.status===503){ SRV=false; localStorage.removeItem(PFX+'eti_srv'); return false; } }catch(e){}
   return SRV; // rete assente o errore del server: resta com'era (se era attivo, si entra in solo stampa)

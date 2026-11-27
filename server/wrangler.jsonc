@@ -1,0 +1,16 @@
+{
+  // Server dell'app Etichette: progetto Cloudflare "etichette-magiostra-server", SEPARATO dal sito.
+  // Su Cloudflare: Workers & Pages → Create → Import a repository → etichette-magiostra,
+  // percorso (root directory) "server", comando di pubblicazione "npx wrangler deploy".
+  // I segreti ETI_PIN ed ETI_GH_TOKEN si impostano solo su Cloudflare (Settings → Variables and secrets).
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "etichette-magiostra-server",
+  "main": "index.ts",
+  "compatibility_date": "2026-10-01",
+  // Indirizzo di riserva *.workers.dev attivo; quello vero è etichette.lamagiostra.it (dominio personalizzato,
+  // da aggiungere su Cloudflare: Settings → Domains & Routes → Add → Custom domain).
+  "workers_dev": true,
+  "preview_urls": false,
+  // Al massimo 5 tentativi di PIN al minuto per indirizzo IP.
+  "ratelimits": [{ "name": "ETI_LIMITE", "namespace_id": "1701", "simple": { "limit": 5, "period": 60 } }]
+}

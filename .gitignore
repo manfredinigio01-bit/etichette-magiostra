@@ -1,2 +1,6 @@
 node_modules/
 tests/locale/
+
+# segreti per le prove in locale del server
+server/.dev.vars
+server/.wrangler

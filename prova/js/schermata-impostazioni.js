@@ -75,7 +75,7 @@ function viewImpostazioni(){
     <div class="muted" style="margin-top:6px">Il tipo di data viene proposto in automatico quando assegni la dicitura a un prodotto.</div>
   </div>
   <div class="card"><h2>Archivio online (tutte le postazioni)</h2>
-    ${srvOn()?`<div class="ok" style="color:#2e6b2e">Collegato all'archivio online tramite il sito, con il PIN del negozio. Nessuna chiave è salvata su questo computer: da qualsiasi PC basta aprire l'app e inserire il PIN.</div>
+    ${srvOn()?`<div class="ok" style="color:#2e6b2e">Collegato all'archivio online con il PIN del negozio. Nessuna chiave è salvata su questo computer: da qualsiasi PC basta aprire l'app e inserire il PIN.</div>
     <div class="muted" style="margin-top:6px">🔓 Modifiche sbloccate fino alle ${PASS?srvOra(PASS.scade):'–'} (o finché non chiudi l'app). Prodotti e impostazioni si sincronizzano da soli ogni 20 secondi e a ogni salvataggio.</div>
     <div class="row" style="margin-top:8px"><button class="b" data-h-click="108">Sincronizza adesso</button><button class="b" data-h-click="109">Blocca adesso</button></div>`
     :ghLocked()?`<div class="err" style="color:var(--rosso)">🔒 Collegato all'archivio online <b>${esc(GHCFG.repo)}</b>, ma <b>bloccato</b>: la chiave è protetta dalla password di questo computer. Puoi stampare e modificare; le modifiche restano qui e partono quando sblocchi.</div>
