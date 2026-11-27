@@ -42,6 +42,8 @@ export async function apriApp(browser, url, { prodotti = null, percorso = PERCOR
   pagina.on('dialog', (d) => { pagina.dialoghi.push(d.message()); d.accept(); });
   pagina.dialoghi = [];
   await pagina.route('https://api.github.com/**', (r) => r.fulfill({ status: 401, body: '{}' }));
+  // server delle Etichette (PIN): nei test non si tocca quello vero, si risponde "non configurato" come prima della 0.9.0
+  await pagina.route('https://etichette.lamagiostra.it/**', (r) => r.fulfill({ status: 503, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: '{"errore":"non configurato"}' }));
   await pagina.goto(url + percorso);
   if (prodotti) {
     // impostazioni predefinite dell'app + prodotti di prova, caricati come farebbe un utente vero
