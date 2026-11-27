@@ -75,7 +75,10 @@ function viewImpostazioni(){
     <div class="muted" style="margin-top:6px">Il tipo di data viene proposto in automatico quando assegni la dicitura a un prodotto.</div>
   </div>
   <div class="card"><h2>Archivio online (tutte le postazioni)</h2>
-    ${ghLocked()?`<div class="err" style="color:var(--rosso)">🔒 Collegato all'archivio online <b>${esc(GHCFG.repo)}</b>, ma <b>bloccato</b>: la chiave è protetta dalla password di questo computer. Puoi stampare e modificare; le modifiche restano qui e partono quando sblocchi.</div>
+    ${srvOn()?`<div class="ok" style="color:#2e6b2e">Collegato all'archivio online tramite il sito, con il PIN del negozio. Nessuna chiave è salvata su questo computer: da qualsiasi PC basta aprire l'app e inserire il PIN.</div>
+    <div class="muted" style="margin-top:6px">🔓 Modifiche sbloccate fino alle ${PASS?srvOra(PASS.scade):'–'} (o finché non chiudi l'app). Prodotti e impostazioni si sincronizzano da soli ogni 20 secondi e a ogni salvataggio.</div>
+    <div class="row" style="margin-top:8px"><button class="b" data-h-click="108">Sincronizza adesso</button><button class="b" data-h-click="109">Blocca adesso</button></div>`
+    :ghLocked()?`<div class="err" style="color:var(--rosso)">🔒 Collegato all'archivio online <b>${esc(GHCFG.repo)}</b>, ma <b>bloccato</b>: la chiave è protetta dalla password di questo computer. Puoi stampare e modificare; le modifiche restano qui e partono quando sblocchi.</div>
     <div class="row" style="margin-top:8px"><label class="f">Password<input id="ghPwCard" type="password" autocomplete="current-password"></label></div>
     <div class="row"><button class="b p" data-h-click="99">Sblocca</button><button class="b d" data-h-click="86">Scollega da questo computer</button></div>
     <div class="muted" style="margin-top:6px">Password dimenticata? Scollega questo computer e ricollegalo con una chiave GitHub nuova: i dati restano online e su questo computer.</div>`
@@ -88,7 +91,7 @@ function viewImpostazioni(){
     <div class="row"><label class="f">Password di questo computer<input id="ghPw1" type="password" autocomplete="new-password"></label><label class="f">Ripeti la password<input id="ghPw2" type="password" autocomplete="new-password"></label></div>
     <div class="row"><button class="b p" data-h-click="87">Collega</button></div>
     <div class="muted" style="margin-top:10px;border-top:1px solid #ddd;padding-top:8px"><b>Su questo computer devi ricollegare ogni volta che chiudi?</b> Allora il browser cancella i dati dei siti alla chiusura (o il PC usa un profilo temporaneo / un programma di pulizia). <b>Edge</b>: Impostazioni → Privacy, ricerca e servizi → Cancella dati delle esplorazioni → "Scegli cosa cancellare ogni volta che chiudi il browser" → spegni <i>Cookie e altri dati del sito</i>. <b>Chrome</b>: Impostazioni → Privacy e sicurezza → Impostazioni sito → Dati dei siti sul dispositivo → scegli <i>I siti possono salvare dati</i> (non "elimina alla chiusura"). Non usare finestre InPrivate / in incognito.${window.STORAGE_PERSIST===false?' <br>Stato su questo PC: il browser <b>non</b> garantisce di conservare i dati di questa app.':''}</div>`}
-    ${!GHCFG&&fsa&&!PROVA?`<details style="margin-top:12px"><summary class="muted">Vecchio metodo: file su Google Drive / cartella condivisa</summary>
+    ${!srvOn()&&!GHCFG&&fsa&&!PROVA?`<details style="margin-top:12px"><summary class="muted">Vecchio metodo: file su Google Drive / cartella condivisa</summary>
     <div class="row" style="margin-top:8px"><button class="b" data-h-click="88">Crea nuovo archivio…</button><button class="b" data-h-click="89">Collega archivio esistente…</button>${fileHandle?`<button class="b d" data-h-click="90">Scollega</button>`:''}</div>
     <div class="muted">${fileHandle?'Collegato a: <b>'+esc(fileHandle.name)+'</b>':'Nessun file collegato.'}</div></details>`:''}
     <h3>Backup e importazione</h3>

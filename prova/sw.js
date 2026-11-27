@@ -1,7 +1,7 @@
 // Service worker: prima la rete (così gli aggiornamenti arrivano subito), poi la copia salvata (funziona offline).
 // Lo stesso file serve la versione normale e quella di prova (cartella prova/): le cache hanno nomi diversi.
 const PROVA = self.registration.scope.includes('/prova/');
-const CACHE = (PROVA ? 'prova-' : '') + 'etichette-v34';
+const CACHE = (PROVA ? 'prova-' : '') + 'etichette-v35';
 const PREFISSO = PROVA ? 'prova-etichette-' : 'etichette-';
 // tutti i file dell'app: servono per funzionare senza internet (stesso ordine di index.html)
 const FILES = ['./', './index.html', './caratteri.css', './stile.css',

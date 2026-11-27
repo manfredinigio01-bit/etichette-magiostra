@@ -76,6 +76,11 @@ function ghLock(){ if(!GHCFG||ghLegacy()) return; if(ghSyncing) return void setT
 function ghLockedStatus(){ setStatus('Archivio online bloccato: le modifiche restano su questo computer finché non lo sblocchi',true); }
 function updGhBar(){
   const bar=document.getElementById('ghbar'); if(!bar) return;
+  if(srvOn()){
+    if(srvUnlocked()){ bar.innerHTML=''; bar.classList.add('hidden'); }
+    else{ bar.innerHTML=`🔒 Solo stampa: per modificare prodotti e impostazioni inserisci il PIN ${pinHTML('pinBar')} <button class="b sm p" data-h-click="107">Sblocca</button>`; bar.classList.remove('hidden'); }
+    return;
+  }
   if(ghLocked()){
     bar.innerHTML=`🔒 Archivio online bloccato su questo computer: puoi stampare e modificare, le modifiche partono quando lo sblocchi. <input id="ghPwBar" type="password" placeholder="Password" autocomplete="current-password" style="width:150px"> <button class="b sm p" data-h-click="97">Sblocca</button>`;
     bar.classList.remove('hidden');
@@ -150,8 +155,108 @@ async function ghConnect(){
   await syncGH(); render();
 }
 function ghDisconnect(){ if(!confirm('Scollegare l\'archivio online da questo computer? I dati restano online e in questo browser.')) return; GH=null; GHCFG=null; localStorage.removeItem(PFX+'mag_gh'); ghOk(); updGhBar(); setStatus('Archivio: solo su questo computer'); render(); }
+
+/* ================== ARCHIVIO TRAMITE IL SITO, CON PIN (v0.9.0) ================== */
+// La chiave GitHub sta solo sul server del sito (Cloudflare, www.lamagiostra.it/api/etichette): nessun PC la conserva più.
+// All'apertura si inserisce il PIN del negozio (controllato dal server, 5 tentativi al minuto); il server restituisce un "pass"
+// firmato che vale fino a sera (sessionStorage: sparisce quando si chiude l'app). Senza PIN: "solo stampa" con i prodotti
+// già scaricati su questo computer. Se il server non è configurato (risponde 503) l'app funziona come prima (chiave per PC).
+const SRV_API='https://www.lamagiostra.it/api/etichette';
+const SRV_PASS_OK=/^[A-Za-z0-9_-]{10,200}\.[A-Za-z0-9_-]{43}$/;
+let SRV=localStorage.getItem(PFX+'eti_srv')==='1'?true:null; // true = archivio tramite il sito; null = da verificare; false = non attivo
+let PASS=null;
+try{ const x=JSON.parse(sessionStorage.getItem(PFX+'eti_pass')||'null'); if(x&&SRV_PASS_OK.test(String(x.pass))&&Number.isFinite(x.scade)) PASS=x; }catch(e){}
+let srvSyncing=false, srvPending=false, srvBusy=false;
+const srvOn=()=>SRV===true;
+const srvUnlocked=()=>!!(PASS&&PASS.scade>Date.now());
+const soloStampa=()=>srvOn()&&!srvUnlocked();
+function srvFetch(method,path,body){
+  return fetch(SRV_API+path,{method,cache:'no-store',headers:{...(PASS?{Authorization:'Bearer '+PASS.pass}:{}),...(body?{'Content-Type':'application/json'}:{}),...(PROVA?{'X-Etichette-Prova':'1'}:{})},body:body?JSON.stringify(body):undefined});
+}
+function srvSetPass(p){ PASS=p; if(p) sessionStorage.setItem(PFX+'eti_pass',JSON.stringify(p)); else sessionStorage.removeItem(PFX+'eti_pass'); }
+function srvAttivo(){ SRV=true; localStorage.setItem(PFX+'eti_srv','1'); }
+function srvOra(t){ return new Date(t).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); }
+// Ti dice se il server del sito gestisce l'archivio (401 = sì, serve il PIN; 503 = non ancora configurato).
+async function srvProva(){
+  try{ const r=await srvFetch('GET','/archivio'); if(r.status===401||r.ok){ srvAttivo(); return true; } if(r.status===503){ SRV=false; localStorage.removeItem(PFX+'eti_srv'); return false; } }catch(e){}
+  return SRV; // rete assente o errore del server: resta com'era (se era attivo, si entra in solo stampa)
+}
+async function srvSblocca(inputId){
+  if(srvBusy) return; const el=document.getElementById(inputId); const pin=(el&&el.value||'').trim(); const msg=document.getElementById('pinMsg');
+  const scrivi=t=>{ if(msg) msg.textContent=t; else alert(t); };
+  if(!/^\d{4,8}$/.test(pin)) return scrivi('Il PIN è fatto di sole cifre');
+  srvBusy=true; scrivi('Controllo…');
+  try{
+    const r=await fetch(SRV_API+'/sblocca',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok&&SRV_PASS_OK.test(String(j.pass))){ srvSetPass({pass:j.pass,scade:+j.scade}); srvAttivo(); document.getElementById('pinbox')?.remove(); updGhBar(); render(); await syncSrv(); return; }
+    if(el){ el.value=''; el.focus(); }
+    scrivi(r.status===429?'Troppi tentativi: aspetta un minuto e riprova':r.status===401?'PIN sbagliato':'Il server non risponde come dovrebbe ('+r.status+')');
+  }catch(e){ scrivi('Senza rete: puoi entrare in "Solo stampa" e usare i prodotti già su questo computer'); }
+  finally{ srvBusy=false; }
+}
+function srvBlocca(){ srvSetPass(null); updGhBar(); render(); setStatus('Solo stampa: per modificare serve il PIN'); }
+function srvSoloStampa(){ document.getElementById('pinbox')?.remove(); updGhBar(); render(); setStatus('Solo stampa: per modificare serve il PIN'); }
+function pinHTML(id,grande){
+  return `<input id="${id}" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="PIN" aria-label="PIN del negozio" class="pinin${grande?' grande':''}">`;
+}
+function mostraPin(){
+  if(document.getElementById('pinbox')) return;
+  document.body.insertAdjacentHTML('beforeend',`<div id="pinbox" role="dialog" aria-modal="true" aria-labelledby="pinTit"><div class="pincard">
+    <img src="${LOGO_SCRITTA}" alt="" style="max-width:180px;margin:0 auto 10px;display:block">
+    <h2 id="pinTit">Inserisci il PIN</h2>
+    <p class="muted">Serve per modificare prodotti e impostazioni. Resta valido finché non chiudi l'app.</p>
+    ${pinHTML('pinIn',true)}
+    <div id="pinMsg" class="pinmsg" aria-live="polite"></div>
+    <button class="b p" style="width:100%;margin-top:6px" data-h-click="104">Entra</button>
+    <button class="b" style="width:100%;margin-top:10px" data-h-click="105">Solo stampa (senza modifiche)</button>
+  </div></div>`);
+  setTimeout(()=>document.getElementById('pinIn')?.focus(),50);
+}
+function viewPinCard(){
+  return `<div class="card" style="max-width:520px"><h2>🔒 Serve il PIN</h2>
+    <p>Per modificare prodotti e impostazioni inserisci il PIN del negozio. Puoi stampare anche senza, dalla scheda <b>Stampa</b>.</p>
+    <div class="row">${pinHTML('pinCard')}<button class="b p" data-h-click="106">Sblocca</button></div>
+    <div id="pinMsg" class="pinmsg" aria-live="polite"></div></div>`;
+}
+document.addEventListener('keydown',ev=>{ if(ev.key!=='Enter') return; const id=ev.target&&ev.target.id;
+  if(id==='pinIn'||id==='pinCard'||id==='pinBar'){ ev.preventDefault(); srvSblocca(id); } });
+async function syncSrv(){
+  if(!srvUnlocked()){ if(srvOn()) updGhBar(); return; } if(srvSyncing){ srvPending=true; return; } srvSyncing=true;
+  try{
+    for(let tent=0;tent<4;tent++){
+      const r=await srvFetch('GET','/archivio');
+      if(r.status===401){ srvSetPass(null); updGhBar(); render(); setStatus('Il PIN è scaduto: inseriscilo di nuovo per modificare',true); return; }
+      if(!r.ok) throw new Error('il server ha risposto '+r.status);
+      const {testo,sha}=await r.json();
+      let remote=null; try{ remote=testo&&testo.trim()?JSON.parse(testo):null; }catch(e){ throw new Error('archivio online illeggibile'); }
+      if(remote&&(!remote.settings||!Array.isArray(remote.prodotti))) throw new Error('il file online non è un archivio etichette');
+      const remoteN=remote?normalize(JSON.parse(JSON.stringify(remote))):null;
+      const before=JSON.stringify(S);
+      const merged=remoteN?merge(S,remoteN):S;
+      const mStr=JSON.stringify(merged);
+      if(mStr!==before){ S=merged; saveLocal(); if(!EDIT) render(); }
+      if(remoteN&&mStr===JSON.stringify(merge(remoteN,{}))) break; // niente di nuovo da inviare
+      if(PROVA) break; // versione di prova: si legge l'archivio vero ma non si scrive mai
+      const w=await srvFetch('PUT','/archivio',{testo:JSON.stringify(merged,null,1),sha,nome:DEV.nome||''});
+      if(w.ok) break;
+      if(w.status===409) continue; // un'altra postazione ha salvato nello stesso momento: rileggo e riunisco
+      if(w.status===401){ srvSetPass(null); updGhBar(); render(); setStatus('Il PIN è scaduto: le modifiche restano qui e partono quando lo inserisci di nuovo',true); return; }
+      throw new Error('il server ha risposto '+w.status);
+    }
+    if(GHCFG){ GHCFG=null; GH=null; localStorage.removeItem(PFX+'mag_gh'); } // la vecchia chiave GitHub di questo PC non serve più
+    lastSync=new Date(); const t=lastSync.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    setStatus(PROVA?'PROVA: prodotti letti dall\'archivio online (le modifiche restano qui) · '+t:'Archivio online ✓ aggiornato alle '+t);
+  }catch(e){
+    const off=!navigator.onLine||e instanceof TypeError;
+    setStatus(off?'Senza rete: le modifiche restano qui e partono appena torna la connessione':'Archivio online: '+e.message,true);
+  }finally{ srvSyncing=false; if(srvPending){ srvPending=false; setTimeout(syncSrv,300); } }
+}
 (async()=>{
-  if(GHCFG){ updGhBar(); await syncGH(); }
+  if(srvOn()&&!srvUnlocked()) mostraPin(); // il server era già attivo su questo PC: il PIN si chiede subito, senza aspettare la rete
+  if(srvUnlocked()){ updGhBar(); await syncSrv(); }
+  else if(await srvProva()){ if(!srvUnlocked()){ updGhBar(); render(); mostraPin(); } }
+  else if(GHCFG){ updGhBar(); await syncGH(); }
   else if('showOpenFilePicker' in window){ try{ const h=await kvGet('handle'); if(h){ fileHandle=h; await syncNow(); } }catch(e){} }
   window.addEventListener('online',()=>syncNow());
   setInterval(()=>syncNow(),20000);
