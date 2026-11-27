@@ -192,7 +192,16 @@ async function apiEtichette(request: Request, env: EnvEtichette, pathname: strin
   const o = request.headers.get('Origin');
   if (o && !origini(env).includes(o)) return new Response('Origine non ammessa', { status: 403 });
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request, env) });
-  if (!env.ETI_PIN || !env.ETI_GH_TOKEN || !PIN_OK.test(env.ETI_PIN)) return json(request, env, { errore: 'non configurato' }, 503);
+  // spazi o a capo incollati per sbaglio nei segreti non devono bloccare tutto
+  env = { ...env, ETI_PIN: (env.ETI_PIN || '').trim(), ETI_GH_TOKEN: (env.ETI_GH_TOKEN || '').trim() };
+  if (!env.ETI_PIN || !env.ETI_GH_TOKEN || !PIN_OK.test(env.ETI_PIN)) {
+    // dice COSA manca, mai i valori: serve a sistemare la configurazione su Cloudflare
+    const manca: string[] = [];
+    if (!env.ETI_GH_TOKEN) manca.push('ETI_GH_TOKEN');
+    if (!env.ETI_PIN) manca.push('ETI_PIN');
+    else if (!PIN_OK.test(env.ETI_PIN)) manca.push(`ETI_PIN valido (deve essere di sole cifre, da 4 a 8: ora è lungo ${env.ETI_PIN.length} caratteri)`);
+    return json(request, env, { errore: 'non configurato', manca }, 503);
+  }
 
   if (pathname === '/sblocca') {
     if (request.method !== 'POST') return json(request, env, { errore: 'metodo' }, 405);
